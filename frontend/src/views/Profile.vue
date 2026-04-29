@@ -38,6 +38,24 @@
             <el-form-item label="Avatar URL">
               <el-input v-model="profileForm.avatar" placeholder="Enter avatar URL" />
             </el-form-item>
+            <el-form-item label="Upload Avatar">
+              <div class="avatar-upload">
+                <el-upload
+                  :show-file-list="false"
+                  :http-request="uploadAvatar"
+                  :before-upload="beforeImageUpload"
+                  accept=".jpg,.jpeg,.png,.gif,.webp"
+                >
+                  <el-button type="primary" :loading="avatarUploading">Upload Avatar</el-button>
+                </el-upload>
+                <img
+                  v-if="profileForm.avatar"
+                  :src="resolveImageUrl(profileForm.avatar)"
+                  alt="avatar preview"
+                  class="avatar-preview"
+                />
+              </div>
+            </el-form-item>
             <el-form-item label="Bio">
               <el-input
                 v-model="profileForm.bio"
@@ -109,6 +127,7 @@ const router = useRouter()
 const profileLoading = ref(false)
 const profileSaving = ref(false)
 const passwordSaving = ref(false)
+const avatarUploading = ref(false)
 
 const profileForm = reactive({
   id: '',
@@ -142,6 +161,52 @@ function applyProfile(user = {}) {
   profileForm.phone = user.phone || ''
   profileForm.avatar = user.avatar || ''
   profileForm.bio = user.bio || ''
+}
+
+function resolveImageUrl(url) {
+  if (!url) {
+    return ''
+  }
+  return url.startsWith('http') ? url : url
+}
+
+function beforeImageUpload(file) {
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+  if (!allowedTypes.includes(file.type)) {
+    ElMessage.error('Only jpg, jpeg, png, gif, webp images are allowed')
+    return false
+  }
+  if (file.size / 1024 / 1024 > 5) {
+    ElMessage.error('Image size must be 5MB or less')
+    return false
+  }
+  return true
+}
+
+const uploadAvatar = async ({ file, onSuccess, onError }) => {
+  avatarUploading.value = true
+  try {
+    const formData = new FormData()
+    formData.append('image', file)
+    const res = await request.post('/upload/image', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+
+    if (res.code === 0) {
+      profileForm.avatar = res.data.url
+      ElMessage.success('Avatar uploaded')
+      onSuccess?.(res.data)
+    } else {
+      throw new Error(res.msg || 'Upload failed')
+    }
+  } catch (error) {
+    ElMessage.error(error.response?.data?.msg || error.message || 'Upload failed')
+    onError?.(error)
+  } finally {
+    avatarUploading.value = false
+  }
 }
 
 async function loadProfile() {
@@ -236,5 +301,20 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.avatar-upload {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.avatar-preview {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 1px solid #dcdfe6;
 }
 </style>

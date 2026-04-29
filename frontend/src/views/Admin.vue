@@ -67,6 +67,17 @@
       <el-tab-pane label="Products" name="products">
         <el-table :data="products" v-loading="loading" stripe>
           <el-table-column prop="id" label="ID" width="80" />
+          <el-table-column label="Image" width="110">
+            <template #default="{ row }">
+              <img
+                v-if="row.images"
+                :src="resolveImageUrl(row.images)"
+                alt="product thumbnail"
+                class="product-thumb"
+              />
+              <span v-else>-</span>
+            </template>
+          </el-table-column>
           <el-table-column prop="title" label="Title" min-width="180" />
           <el-table-column prop="category" label="Category" width="120" />
           <el-table-column prop="status" label="Status" width="120" />
@@ -148,6 +159,13 @@ const statCards = computed(() => [
 
 function isUserActive(user) {
   return String(user?.status || '').toUpperCase() !== 'DISABLED'
+}
+
+function resolveImageUrl(url) {
+  if (!url) {
+    return ''
+  }
+  return url.startsWith('http') ? url : url
 }
 
 async function loadAllData() {
@@ -256,5 +274,13 @@ onMounted(() => {
   background: #fff;
   border-radius: 16px;
   padding: 16px;
+}
+
+.product-thumb {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
 }
 </style>
