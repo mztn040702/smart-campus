@@ -51,7 +51,6 @@
 <script>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import axios from './utils/axios'
 
 export default {
   name: 'App',
@@ -59,11 +58,15 @@ export default {
     const router = useRouter()
     const route = useRoute()
     const currentUser = ref(JSON.parse(localStorage.getItem('user') || '{}'))
-    const isLoggedIn = computed(() => currentUser.value.id && route.path !== '/login' && route.path !== '/register')
+    const token = ref(localStorage.getItem('token') || '')
+    const isLoggedIn = computed(() => currentUser.value.id && token.value && route.path !== '/login' && route.path !== '/register')
     const activeMenu = computed(() => route.path)
 
     const logout = () => {
       localStorage.removeItem('user')
+      localStorage.removeItem('token')
+      currentUser.value = {}
+      token.value = ''
       router.push('/login')
     }
 
@@ -130,4 +133,3 @@ export default {
   padding: 20px;
 }
 </style>
-

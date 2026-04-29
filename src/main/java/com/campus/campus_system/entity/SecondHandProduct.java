@@ -1,12 +1,17 @@
 package com.campus.campus_system.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-/**
- * 二手商品实体
- */
 @Entity
 @Table(name = "second_hand_product")
 public class SecondHandProduct {
@@ -15,28 +20,28 @@ public class SecondHandProduct {
     private Long id;
 
     @Column(name = "seller_id", nullable = false)
-    private Long sellerId;  // 卖家ID
+    private Long sellerId;
 
     @Column(nullable = false, length = 200)
-    private String title;  // 商品标题
+    private String title;
 
     @Column(columnDefinition = "TEXT")
-    private String description;  // 商品描述
+    private String description;
 
     @Column(precision = 10, scale = 2)
-    private BigDecimal price;  // 价格
+    private BigDecimal price;
 
     @Column(length = 500)
-    private String images;  // 商品图片（JSON格式存储多个图片URL）
+    private String images;
 
     @Column(length = 50)
-    private String category;  // 分类：书籍、电子产品、生活用品等
+    private String category;
 
     @Column(length = 20)
-    private String status = "on_sale";  // 状态：on_sale(在售), sold(已售), removed(已下架)
+    private String status = "on_sale";
 
     @Column(name = "view_count")
-    private Integer viewCount = 0;  // 浏览次数
+    private Integer viewCount = 0;
 
     @Column(name = "create_time")
     private LocalDateTime createTime;
@@ -55,7 +60,6 @@ public class SecondHandProduct {
         updateTime = LocalDateTime.now();
     }
 
-    // Getter and Setter
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public Long getSellerId() { return sellerId; }
@@ -79,4 +83,3 @@ public class SecondHandProduct {
     public LocalDateTime getUpdateTime() { return updateTime; }
     public void setUpdateTime(LocalDateTime updateTime) { this.updateTime = updateTime; }
 }
-

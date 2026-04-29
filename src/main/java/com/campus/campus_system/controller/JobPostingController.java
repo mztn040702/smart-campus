@@ -2,8 +2,14 @@ package com.campus.campus_system.controller;
 
 import com.campus.campus_system.entity.JobPosting;
 import com.campus.campus_system.service.JobPostingService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
@@ -14,10 +20,12 @@ import java.util.Map;
 @RequestMapping("/api/job")
 @CrossOrigin(origins = "*")
 public class JobPostingController {
-    @Autowired
-    private JobPostingService jobPostingService;
+    private final JobPostingService jobPostingService;
 
-    // 发布职位
+    public JobPostingController(JobPostingService jobPostingService) {
+        this.jobPostingService = jobPostingService;
+    }
+
     @PostMapping("/publish")
     public Map<String, Object> publishJob(@RequestBody Map<String, Object> params) {
         Map<String, Object> result = new HashMap<>();
@@ -38,7 +46,7 @@ public class JobPostingController {
             if (params.containsKey("contact")) {
                 job.setContact(params.get("contact").toString());
             }
-            
+
             JobPosting saved = jobPostingService.publishJob(job);
             result.put("code", 0);
             result.put("data", saved);
@@ -49,7 +57,6 @@ public class JobPostingController {
         return result;
     }
 
-    // 获取所有有效职位
     @GetMapping("/list")
     public Map<String, Object> getAllJobs(@RequestParam(required = false) String jobType) {
         Map<String, Object> result = new HashMap<>();
@@ -69,7 +76,6 @@ public class JobPostingController {
         return result;
     }
 
-    // 搜索职位
     @GetMapping("/search")
     public Map<String, Object> searchJobs(@RequestParam String keyword) {
         Map<String, Object> result = new HashMap<>();
@@ -84,7 +90,6 @@ public class JobPostingController {
         return result;
     }
 
-    // 获取职位详情
     @GetMapping("/{id}")
     public Map<String, Object> getJobById(@PathVariable Long id) {
         Map<String, Object> result = new HashMap<>();
@@ -99,7 +104,6 @@ public class JobPostingController {
         return result;
     }
 
-    // 获取用户发布的职位
     @GetMapping("/my/{publisherId}")
     public Map<String, Object> getMyJobs(@PathVariable Long publisherId) {
         Map<String, Object> result = new HashMap<>();
@@ -114,4 +118,3 @@ public class JobPostingController {
         return result;
     }
 }
-

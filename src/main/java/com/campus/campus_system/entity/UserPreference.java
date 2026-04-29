@@ -1,11 +1,15 @@
 package com.campus.campus_system.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
+
 import java.time.LocalDateTime;
 
-/**
- * 用户偏好实体 - 用于智能推荐
- */
 @Entity
 @Table(name = "user_preference")
 public class UserPreference {
@@ -17,13 +21,13 @@ public class UserPreference {
     private Long userId;
 
     @Column(length = 50)
-    private String category;  // 偏好分类：二手交易、求职、互助等
+    private String category;
 
     @Column(length = 100)
-    private String keyword;  // 关键词
+    private String keyword;
 
     @Column(name = "click_count")
-    private Integer clickCount = 1;  // 点击次数
+    private Integer clickCount = 1;
 
     @Column(name = "last_click_time")
     private LocalDateTime lastClickTime;
@@ -39,7 +43,6 @@ public class UserPreference {
         }
     }
 
-    // Getter and Setter
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public Long getUserId() { return userId; }
@@ -55,4 +58,3 @@ public class UserPreference {
     public LocalDateTime getCreateTime() { return createTime; }
     public void setCreateTime(LocalDateTime createTime) { this.createTime = createTime; }
 }
-

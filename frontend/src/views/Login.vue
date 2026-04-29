@@ -46,6 +46,7 @@ export default {
         const res = await axios.post('/user/login', form.value)
         if (res.code === 0) {
           localStorage.setItem('user', JSON.stringify(res.data))
+          localStorage.setItem('token', res.token)
           ElMessage.success('登录成功')
           router.push('/home')
         } else {
@@ -87,4 +88,3 @@ export default {
   color: #333;
 }
 </style>
-

@@ -2,8 +2,14 @@ package com.campus.campus_system.controller;
 
 import com.campus.campus_system.entity.User;
 import com.campus.campus_system.service.UserService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import com.campus.campus_system.util.JwtTokenUtil;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -12,10 +18,14 @@ import java.util.Map;
 @RequestMapping("/api/user")
 @CrossOrigin(origins = "*")
 public class UserController {
-    @Autowired
-    private UserService userService;
+    private final UserService userService;
+    private final JwtTokenUtil jwtTokenUtil;
 
-    // 登录接口（接收JSON参数）
+    public UserController(UserService userService, JwtTokenUtil jwtTokenUtil) {
+        this.userService = userService;
+        this.jwtTokenUtil = jwtTokenUtil;
+    }
+
     @PostMapping("/login")
     public Map<String, Object> login(@RequestBody Map<String, String> params) {
         Map<String, Object> result = new HashMap<>();
@@ -23,16 +33,16 @@ public class UserController {
             String username = params.get("username");
             String password = params.get("password");
             User user = userService.login(username, password);
-            result.put("code", 0);  // 0表示成功
+            result.put("code", 0);
             result.put("data", user);
+            result.put("token", jwtTokenUtil.generateToken(user.getId(), user.getUsername()));
         } catch (Exception e) {
-            result.put("code", 1);  // 1表示失败
+            result.put("code", 1);
             result.put("msg", e.getMessage());
         }
         return result;
     }
 
-    // 用户注册接口
     @PostMapping("/register")
     public Map<String, Object> register(@RequestBody Map<String, String> params) {
         Map<String, Object> result = new HashMap<>();
@@ -51,7 +61,6 @@ public class UserController {
         return result;
     }
 
-    // 获取用户信息接口
     @GetMapping("/{id}")
     public Map<String, Object> getUserInfo(@PathVariable Long id) {
         Map<String, Object> result = new HashMap<>();
@@ -66,7 +75,6 @@ public class UserController {
         return result;
     }
 
-    // 获取所有用户
     @GetMapping("/list")
     public Map<String, Object> getAllUsers() {
         Map<String, Object> result = new HashMap<>();
