@@ -24,7 +24,8 @@ public class User {
 
     private String avatar;
     private String college;
-    private String role;
+    private String role = "USER";
+    private String status = "ACTIVE";
 
     @Column(name = "create_time")
     private LocalDateTime createTime;
@@ -44,6 +45,8 @@ public class User {
     public void setCollege(String college) { this.college = college; }
     public String getRole() { return role; }
     public void setRole(String role) { this.role = role; }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
     public LocalDateTime getCreateTime() { return createTime; }
     public void setCreateTime(LocalDateTime createTime) { this.createTime = createTime; }
 }
