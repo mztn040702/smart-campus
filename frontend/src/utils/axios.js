@@ -1,34 +1,35 @@
 import axios from 'axios'
+import { clearSession, getStoredSession } from './auth.mjs'
 
 const instance = axios.create({
   baseURL: '/api',
   timeout: 10000
 })
 
-// 请求拦截器
 instance.interceptors.request.use(
-  config => {
-    const user = JSON.parse(localStorage.getItem('user') || '{}')
-    if (user.id) {
-      // 可以在这里添加token等认证信息
+  (config) => {
+    const { token } = getStoredSession()
+    if (token) {
+      config.headers = config.headers || {}
+      config.headers.Authorization = `Bearer ${token}`
     }
     return config
   },
-  error => {
-    return Promise.reject(error)
-  }
+  (error) => Promise.reject(error)
 )
 
-// 响应拦截器
 instance.interceptors.response.use(
-  response => {
-    return response.data
-  },
-  error => {
-    console.error('请求错误:', error)
+  (response) => response.data,
+  (error) => {
+    if (error.response?.status === 401) {
+      clearSession()
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login'
+      }
+    }
+    console.error('Request error:', error)
     return Promise.reject(error)
   }
 )
 
 export default instance
-

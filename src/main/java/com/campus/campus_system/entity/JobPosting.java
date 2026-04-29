@@ -1,12 +1,17 @@
 package com.campus.campus_system.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-/**
- * 求职信息实体
- */
 @Entity
 @Table(name = "job_posting")
 public class JobPosting {
@@ -15,37 +20,37 @@ public class JobPosting {
     private Long id;
 
     @Column(name = "publisher_id", nullable = false)
-    private Long publisherId;  // 发布者ID
+    private Long publisherId;
 
     @Column(nullable = false, length = 200)
-    private String title;  // 职位标题
+    private String title;
 
     @Column(columnDefinition = "TEXT")
-    private String description;  // 职位描述
+    private String description;
 
     @Column(length = 100)
-    private String company;  // 公司名称
+    private String company;
 
     @Column(length = 100)
-    private String location;  // 工作地点
+    private String location;
 
     @Column(length = 50)
-    private String jobType;  // 工作类型：全职、兼职、实习
+    private String jobType;
 
     @Column(precision = 10, scale = 2)
-    private BigDecimal salary;  // 薪资
+    private BigDecimal salary;
 
     @Column(length = 200)
-    private String requirements;  // 任职要求
+    private String requirements;
 
     @Column(length = 50)
-    private String contact;  // 联系方式
+    private String contact;
 
     @Column(length = 20)
-    private String status = "active";  // 状态：active(有效), closed(已关闭)
+    private String status = "active";
 
     @Column(name = "view_count")
-    private Integer viewCount = 0;  // 浏览次数
+    private Integer viewCount = 0;
 
     @Column(name = "create_time")
     private LocalDateTime createTime;
@@ -64,7 +69,6 @@ public class JobPosting {
         updateTime = LocalDateTime.now();
     }
 
-    // Getter and Setter
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public Long getPublisherId() { return publisherId; }
@@ -94,4 +98,3 @@ public class JobPosting {
     public LocalDateTime getUpdateTime() { return updateTime; }
     public void setUpdateTime(LocalDateTime updateTime) { this.updateTime = updateTime; }
 }
-
