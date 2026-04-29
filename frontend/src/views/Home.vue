@@ -1,8 +1,26 @@
 <template>
   <div class="home-container">
-    <h2>智能推荐</h2>
+    <div class="quick-nav">
+      <el-card
+        v-for="link in quickLinks"
+        :key="link.path"
+        class="quick-nav-card"
+        shadow="hover"
+        @click="goTo(link.path)"
+      >
+        <div class="quick-nav-content">
+          <div>
+            <h3>{{ link.title }}</h3>
+            <p>{{ link.description }}</p>
+          </div>
+          <el-button :type="link.type" plain>Open</el-button>
+        </div>
+      </el-card>
+    </div>
+
+    <h2>Smart Recommendations</h2>
     <el-tabs v-model="activeTab" @tab-change="handleTabChange">
-      <el-tab-pane label="推荐商品" name="products">
+      <el-tab-pane label="Recommended Products" name="products">
         <div class="content-grid">
           <el-card v-for="product in recommendedProducts" :key="product.id" class="content-card" @click="viewProduct(product)">
             <div class="card-content">
@@ -14,7 +32,7 @@
           </el-card>
         </div>
       </el-tab-pane>
-      <el-tab-pane label="推荐职位" name="jobs">
+      <el-tab-pane label="Recommended Jobs" name="jobs">
         <div class="content-grid">
           <el-card v-for="job in recommendedJobs" :key="job.id" class="content-card" @click="viewJob(job)">
             <div class="card-content">
@@ -26,7 +44,7 @@
           </el-card>
         </div>
       </el-tab-pane>
-      <el-tab-pane label="推荐求助" name="helps">
+      <el-tab-pane label="Recommended Help" name="helps">
         <div class="content-grid">
           <el-card v-for="help in recommendedHelps" :key="help.id" class="content-card" @click="viewHelp(help)">
             <div class="card-content">
@@ -45,13 +63,18 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from '../utils/axios'
-import { ElMessage } from 'element-plus'
 
 export default {
   name: 'Home',
   setup() {
     const router = useRouter()
     const activeTab = ref('products')
+    const quickLinks = [
+      { title: 'Product Page', description: 'Browse and publish second-hand goods.', path: '/product', type: 'danger' },
+      { title: 'Job Page', description: 'View full-time, part-time, and internship posts.', path: '/job', type: 'primary' },
+      { title: 'Help Page', description: 'Publish requests and respond to classmates.', path: '/help', type: 'success' },
+      { title: 'Chat Page', description: 'Contact sellers, recruiters, and helpers.', path: '/chat', type: 'warning' }
+    ]
     const recommendedProducts = ref([])
     const recommendedJobs = ref([])
     const recommendedHelps = ref([])
@@ -69,7 +92,7 @@ export default {
         if (jobsRes.code === 0) recommendedJobs.value = jobsRes.data
         if (helpsRes.code === 0) recommendedHelps.value = helpsRes.data
       } catch (error) {
-        console.error('加载推荐失败:', error)
+        console.error('鍔犺浇鎺ㄨ崘澶辫触:', error)
       }
     }
 
@@ -100,12 +123,17 @@ export default {
       return map[urgency] || 'info'
     }
 
+    const goTo = (path) => {
+      router.push(path)
+    }
+
     onMounted(() => {
       loadRecommendations()
     })
 
     return {
       activeTab,
+      quickLinks,
       recommendedProducts,
       recommendedJobs,
       recommendedHelps,
@@ -113,7 +141,8 @@ export default {
       viewProduct,
       viewJob,
       viewHelp,
-      getUrgencyType
+      getUrgencyType,
+      goTo
     }
   }
 }
@@ -122,6 +151,39 @@ export default {
 <style scoped>
 .home-container {
   padding: 20px;
+}
+
+.quick-nav {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.quick-nav-card {
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.quick-nav-card:hover {
+  transform: translateY(-4px);
+}
+
+.quick-nav-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.quick-nav-content h3 {
+  margin-bottom: 8px;
+  color: #333;
+}
+
+.quick-nav-content p {
+  color: #666;
+  line-height: 1.5;
 }
 
 .content-grid {
@@ -172,4 +234,3 @@ export default {
   -webkit-box-orient: vertical;
 }
 </style>
-

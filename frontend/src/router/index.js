@@ -6,17 +6,21 @@ import Chat from '../views/Chat.vue'
 import Product from '../views/Product.vue'
 import Job from '../views/Job.vue'
 import Help from '../views/Help.vue'
+import { hasValidSession } from '../utils/auth.mjs'
+import { canAccessRoute } from './access.mjs'
 
 const routes = [
   {
     path: '/login',
     name: 'Login',
-    component: Login
+    component: Login,
+    meta: { public: true }
   },
   {
     path: '/register',
     name: 'Register',
-    component: Register
+    component: Register,
+    meta: { public: true }
   },
   {
     path: '/home',
@@ -54,5 +58,15 @@ const router = createRouter({
   routes
 })
 
-export default router
+router.beforeEach((to) => {
+  if (!canAccessRoute(to.path, hasValidSession())) {
+    return {
+      path: '/login',
+      query: { redirect: to.fullPath }
+    }
+  }
 
+  return true
+})
+
+export default router
