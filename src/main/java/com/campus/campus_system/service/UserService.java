@@ -58,6 +58,13 @@ public class UserService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
 
+    @Transactional
+    public User getCurrentUserProfile(Long currentUserId) {
+        User user = getUserById(currentUserId);
+        normalizeUserStatus(user);
+        return user;
+    }
+
     public List<User> getAllUsers() {
         return userRepository.findAll();
     }
@@ -75,6 +82,35 @@ public class UserService {
             user.setAvatar(avatar);
         }
         return userRepository.save(user);
+    }
+
+    @Transactional
+    public User updateCurrentUserProfile(
+            Long currentUserId,
+            String nickname,
+            String email,
+            String phone,
+            String bio,
+            String avatar
+    ) {
+        User user = getUserById(currentUserId);
+        user.setNickname(nickname);
+        user.setEmail(email);
+        user.setPhone(phone);
+        user.setBio(bio);
+        user.setAvatar(avatar);
+        return userRepository.save(user);
+    }
+
+    @Transactional
+    public void changePassword(Long currentUserId, String oldPassword, String newPassword) {
+        User user = getUserById(currentUserId);
+        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+            throw new RuntimeException("Old password incorrect");
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
     }
 
     @Transactional

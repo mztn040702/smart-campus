@@ -37,6 +37,10 @@
               <el-icon><ChatLineRound /></el-icon>
               <span>Chat</span>
             </el-menu-item>
+            <el-menu-item index="/profile">
+              <el-icon><User /></el-icon>
+              <span>Profile</span>
+            </el-menu-item>
             <el-menu-item v-if="isAdmin" index="/admin">
               <el-icon><DataAnalysis /></el-icon>
               <span>Admin</span>
@@ -58,7 +62,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { PUBLIC_PATHS } from './router/access.mjs'
 import { clearSession, syncSessionState, useSessionState } from './utils/auth.mjs'
 
-const SHELL_MENU_PATHS = ['/home', '/product', '/job', '/help', '/chat', '/admin']
+const SHELL_MENU_PATHS = ['/home', '/product', '/job', '/help', '/chat', '/profile', '/admin']
 
 export default {
   name: 'App',
@@ -75,7 +79,7 @@ export default {
       }
       return '/home'
     })
-    const displayName = computed(() => session.user?.realName || session.user?.username || '')
+    const displayName = computed(() => session.user?.nickname || session.user?.realName || session.user?.username || '')
 
     const logout = () => {
       clearSession()

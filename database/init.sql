@@ -10,6 +10,10 @@ CREATE TABLE IF NOT EXISTS user (
     username VARCHAR(50) UNIQUE NOT NULL COMMENT '用户名',
     password VARCHAR(255) NOT NULL COMMENT '密码',
     real_name VARCHAR(50) COMMENT '真实姓名',
+    nickname VARCHAR(50) COMMENT '昵称',
+    email VARCHAR(100) COMMENT '邮箱',
+    phone VARCHAR(30) COMMENT '手机号',
+    bio TEXT COMMENT '个人简介',
     avatar VARCHAR(255) COMMENT '头像URL',
     college VARCHAR(100) COMMENT '学院',
     role VARCHAR(20) DEFAULT 'USER' COMMENT '角色',
@@ -105,11 +109,11 @@ CREATE TABLE IF NOT EXISTS user_preference (
 
 -- 插入测试数据
 -- 测试用户
-INSERT INTO user (username, password, real_name, college, role, status) VALUES
-('admin', 'admin123', '管理员', '计算机学院', 'ADMIN', 'ACTIVE'),
-('student1', '123456', '张三', '计算机学院', 'USER', 'ACTIVE'),
-('student2', '123456', '李四', '经济管理学院', 'USER', 'ACTIVE'),
-('student3', '123456', '王五', '外国语学院', 'USER', 'ACTIVE');
+INSERT INTO user (username, password, real_name, nickname, email, phone, bio, college, role, status) VALUES
+('admin', 'admin123', '管理员', '系统管理员', 'admin@campus.test', '13800000000', '负责系统管理', '计算机学院', 'ADMIN', 'ACTIVE'),
+('student1', '123456', '张三', '张三', 'student1@campus.test', '13800000001', '喜欢二手交易和聊天', '计算机学院', 'USER', 'ACTIVE'),
+('student2', '123456', '李四', '李四', 'student2@campus.test', '13800000002', '关注招聘和互助', '经济管理学院', 'USER', 'ACTIVE'),
+('student3', '123456', '王五', '王五', 'student3@campus.test', '13800000003', '校园生活爱好者', '外国语学院', 'USER', 'ACTIVE');
 
 -- 测试二手商品
 INSERT INTO second_hand_product (seller_id, title, description, price, category, status) VALUES
