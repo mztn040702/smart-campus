@@ -50,4 +50,5 @@ test('route access allows business pages with auth', () => {
   assert.equal(canAccessRoute('/job', true), true)
   assert.equal(canAccessRoute('/help', true), true)
   assert.equal(canAccessRoute('/chat', true), true)
+  assert.equal(canAccessRoute('/profile', true), true)
 })

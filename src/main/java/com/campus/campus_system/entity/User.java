@@ -22,6 +22,13 @@ public class User {
     @Column(name = "real_name")
     private String realName;
 
+    private String nickname;
+    private String email;
+    private String phone;
+
+    @Column(columnDefinition = "TEXT")
+    private String bio;
+
     private String avatar;
     private String college;
     private String role = "USER";
@@ -39,6 +46,14 @@ public class User {
     public void setPassword(String password) { this.password = password; }
     public String getRealName() { return realName; }
     public void setRealName(String realName) { this.realName = realName; }
+    public String getNickname() { return nickname; }
+    public void setNickname(String nickname) { this.nickname = nickname; }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
+    public String getPhone() { return phone; }
+    public void setPhone(String phone) { this.phone = phone; }
+    public String getBio() { return bio; }
+    public void setBio(String bio) { this.bio = bio; }
     public String getAvatar() { return avatar; }
     public void setAvatar(String avatar) { this.avatar = avatar; }
     public String getCollege() { return college; }

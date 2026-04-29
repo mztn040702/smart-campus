@@ -1,12 +1,14 @@
 package com.campus.campus_system.controller;
 
 import com.campus.campus_system.entity.User;
+import jakarta.servlet.http.HttpServletRequest;
 import com.campus.campus_system.service.UserService;
 import com.campus.campus_system.util.JwtTokenUtil;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -86,5 +88,75 @@ public class UserController {
             result.put("msg", e.getMessage());
         }
         return result;
+    }
+
+    @GetMapping("/profile")
+    public Map<String, Object> getCurrentUserProfile(HttpServletRequest request) {
+        Map<String, Object> result = new HashMap<>();
+        try {
+            User user = userService.getCurrentUserProfile(getCurrentUserId(request));
+            result.put("code", 0);
+            result.put("data", user);
+        } catch (Exception e) {
+            result.put("code", 1);
+            result.put("msg", e.getMessage());
+        }
+        return result;
+    }
+
+    @PutMapping("/profile")
+    public Map<String, Object> updateCurrentUserProfile(
+            @RequestBody Map<String, String> params,
+            HttpServletRequest request
+    ) {
+        Map<String, Object> result = new HashMap<>();
+        try {
+            User user = userService.updateCurrentUserProfile(
+                    getCurrentUserId(request),
+                    params.get("nickname"),
+                    params.get("email"),
+                    params.get("phone"),
+                    params.get("bio"),
+                    params.get("avatar")
+            );
+            result.put("code", 0);
+            result.put("data", user);
+        } catch (Exception e) {
+            result.put("code", 1);
+            result.put("msg", e.getMessage());
+        }
+        return result;
+    }
+
+    @PutMapping("/password")
+    public Map<String, Object> changePassword(
+            @RequestBody Map<String, String> params,
+            HttpServletRequest request
+    ) {
+        Map<String, Object> result = new HashMap<>();
+        try {
+            userService.changePassword(
+                    getCurrentUserId(request),
+                    params.get("oldPassword"),
+                    params.get("newPassword")
+            );
+            result.put("code", 0);
+            result.put("msg", "Password updated");
+        } catch (Exception e) {
+            result.put("code", 1);
+            result.put("msg", e.getMessage());
+        }
+        return result;
+    }
+
+    private Long getCurrentUserId(HttpServletRequest request) {
+        Object value = request.getAttribute("currentUserId");
+        if (value instanceof Long id) {
+            return id;
+        }
+        if (value instanceof Number number) {
+            return number.longValue();
+        }
+        throw new RuntimeException("Unauthorized");
     }
 }

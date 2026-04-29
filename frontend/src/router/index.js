@@ -7,6 +7,7 @@ import Product from '../views/Product.vue'
 import Job from '../views/Job.vue'
 import Help from '../views/Help.vue'
 import Admin from '../views/Admin.vue'
+import Profile from '../views/Profile.vue'
 import { getStoredSession } from '../utils/auth.mjs'
 import { ADMIN_PATHS, canAccessRoute } from './access.mjs'
 
@@ -47,6 +48,11 @@ const routes = [
     path: '/help',
     name: 'Help',
     component: Help
+  },
+  {
+    path: '/profile',
+    name: 'Profile',
+    component: Profile
   },
   {
     path: '/admin',
