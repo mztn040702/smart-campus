@@ -30,17 +30,24 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(password));
         user.setRealName(realName);
         user.setCollege(college);
-        user.setRole("student");
+        user.setRole("USER");
+        user.setStatus("ACTIVE");
         user.setCreateTime(LocalDateTime.now());
         return userRepository.save(user);
     }
 
+    @Transactional
     public User login(String username, String password) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("Invalid username or password"));
 
         if (!passwordEncoder.matches(password, user.getPassword())) {
             throw new RuntimeException("Invalid username or password");
+        }
+
+        String status = normalizeUserStatus(user);
+        if ("DISABLED".equalsIgnoreCase(status)) {
+            throw new RuntimeException("Account disabled");
         }
 
         return user;
@@ -68,5 +75,16 @@ public class UserService {
             user.setAvatar(avatar);
         }
         return userRepository.save(user);
+    }
+
+    @Transactional
+    public String normalizeUserStatus(User user) {
+        String status = user.getStatus();
+        if (status == null || status.isBlank()) {
+            user.setStatus("ACTIVE");
+            userRepository.save(user);
+            return "ACTIVE";
+        }
+        return status;
     }
 }

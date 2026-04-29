@@ -37,6 +37,10 @@
               <el-icon><ChatLineRound /></el-icon>
               <span>Chat</span>
             </el-menu-item>
+            <el-menu-item v-if="isAdmin" index="/admin">
+              <el-icon><DataAnalysis /></el-icon>
+              <span>Admin</span>
+            </el-menu-item>
           </el-menu>
         </el-aside>
         <el-main>
@@ -54,7 +58,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { PUBLIC_PATHS } from './router/access.mjs'
 import { clearSession, syncSessionState, useSessionState } from './utils/auth.mjs'
 
-const SHELL_MENU_PATHS = ['/home', '/product', '/job', '/help', '/chat']
+const SHELL_MENU_PATHS = ['/home', '/product', '/job', '/help', '/chat', '/admin']
 
 export default {
   name: 'App',
@@ -64,8 +68,9 @@ export default {
     const session = useSessionState()
     const isAuthPage = computed(() => PUBLIC_PATHS.includes(route.path))
     const showShell = computed(() => Boolean(session.user?.id && session.token) && !isAuthPage.value)
+    const isAdmin = computed(() => String(session.user?.role || '').toUpperCase() === 'ADMIN')
     const activeMenu = computed(() => {
-      if (SHELL_MENU_PATHS.includes(route.path)) {
+      if (SHELL_MENU_PATHS.includes(route.path) && (route.path !== '/admin' || isAdmin.value)) {
         return route.path
       }
       return '/home'
@@ -92,6 +97,7 @@ export default {
 
     return {
       showShell,
+      isAdmin,
       activeMenu,
       displayName,
       logout

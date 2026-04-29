@@ -6,8 +6,9 @@ import Chat from '../views/Chat.vue'
 import Product from '../views/Product.vue'
 import Job from '../views/Job.vue'
 import Help from '../views/Help.vue'
-import { hasValidSession } from '../utils/auth.mjs'
-import { canAccessRoute } from './access.mjs'
+import Admin from '../views/Admin.vue'
+import { getStoredSession } from '../utils/auth.mjs'
+import { ADMIN_PATHS, canAccessRoute } from './access.mjs'
 
 const routes = [
   {
@@ -48,6 +49,11 @@ const routes = [
     component: Help
   },
   {
+    path: '/admin',
+    name: 'Admin',
+    component: Admin
+  },
+  {
     path: '/',
     redirect: '/home'
   }
@@ -59,7 +65,13 @@ const router = createRouter({
 })
 
 router.beforeEach((to) => {
-  if (!canAccessRoute(to.path, hasValidSession())) {
+  const session = getStoredSession()
+
+  if (!canAccessRoute(to.path, session)) {
+    if (session.user?.id && session.token && ADMIN_PATHS.includes(to.path)) {
+      return { path: '/home' }
+    }
+
     return {
       path: '/login',
       query: { redirect: to.fullPath }

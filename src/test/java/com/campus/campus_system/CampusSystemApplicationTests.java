@@ -49,6 +49,8 @@ class CampusSystemApplicationTests {
         User savedUser = userRepository.findByUsername(username).orElseThrow();
         assertThat(savedUser.getPassword()).isNotEqualTo(password);
         assertThat(savedUser.getPassword()).startsWith("$2");
+        assertThat(savedUser.getRole()).isEqualTo("USER");
+        assertThat(savedUser.getStatus()).isEqualTo("ACTIVE");
 
         String loginBody = """
                 {
@@ -78,5 +80,58 @@ class CampusSystemApplicationTests {
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(0));
+    }
+
+    @Test
+    void loginAutoRepairsLegacyBlankOrNullStatusUsers() throws Exception {
+        String blankStatusUsername = "legacy_blank_" + UUID.randomUUID().toString().replace("-", "");
+        String nullStatusUsername = "legacy_null_" + UUID.randomUUID().toString().replace("-", "");
+        String password = "Secret123!";
+
+        registerUser(blankStatusUsername, password);
+        registerUser(nullStatusUsername, password);
+
+        User blankStatusUser = userRepository.findByUsername(blankStatusUsername).orElseThrow();
+        blankStatusUser.setStatus("");
+        userRepository.save(blankStatusUser);
+
+        User nullStatusUser = userRepository.findByUsername(nullStatusUsername).orElseThrow();
+        nullStatusUser.setStatus(null);
+        userRepository.save(nullStatusUser);
+
+        login(blankStatusUsername, password);
+        login(nullStatusUsername, password);
+
+        assertThat(userRepository.findByUsername(blankStatusUsername).orElseThrow().getStatus()).isEqualTo("ACTIVE");
+        assertThat(userRepository.findByUsername(nullStatusUsername).orElseThrow().getStatus()).isEqualTo("ACTIVE");
+    }
+
+    private void registerUser(String username, String password) throws Exception {
+        mockMvc.perform(post("/api/user/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "username": "%s",
+                                  "password": "%s",
+                                  "realName": "Legacy User",
+                                  "college": "Computer Science"
+                                }
+                                """.formatted(username, password)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0));
+    }
+
+    private void login(String username, String password) throws Exception {
+        mockMvc.perform(post("/api/user/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "username": "%s",
+                                  "password": "%s"
+                                }
+                                """.formatted(username, password)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.token").isString());
     }
 }
