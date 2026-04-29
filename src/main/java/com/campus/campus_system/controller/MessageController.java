@@ -2,6 +2,7 @@ package com.campus.campus_system.controller;
 
 import com.campus.campus_system.entity.Message;
 import com.campus.campus_system.service.MessageService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,10 +27,16 @@ public class MessageController {
     }
 
     @PostMapping("/send")
-    public Map<String, Object> sendMessage(@RequestBody Map<String, Object> params) {
+    public Map<String, Object> sendMessage(HttpServletRequest request, @RequestBody Map<String, Object> params) {
         Map<String, Object> result = new HashMap<>();
         try {
-            Long senderId = Long.valueOf(params.get("senderId").toString());
+            Long currentUserId = (Long) request.getAttribute("currentUserId");
+            Long senderId = params.containsKey("senderId")
+                    ? Long.valueOf(params.get("senderId").toString())
+                    : currentUserId;
+            if (!senderId.equals(currentUserId)) {
+                throw new RuntimeException("Sender does not match current user");
+            }
             Long receiverId = Long.valueOf(params.get("receiverId").toString());
             String content = params.get("content").toString();
             String messageType = params.containsKey("messageType") ? params.get("messageType").toString() : "text";
@@ -45,9 +52,15 @@ public class MessageController {
     }
 
     @GetMapping("/conversation")
-    public Map<String, Object> getConversation(@RequestParam Long userId1, @RequestParam Long userId2) {
+    public Map<String, Object> getConversation(HttpServletRequest request,
+                                               @RequestParam Long userId1,
+                                               @RequestParam Long userId2) {
         Map<String, Object> result = new HashMap<>();
         try {
+            Long currentUserId = (Long) request.getAttribute("currentUserId");
+            if (!currentUserId.equals(userId1) && !currentUserId.equals(userId2)) {
+                throw new RuntimeException("Not allowed to view this conversation");
+            }
             List<Message> messages = messageService.getConversation(userId1, userId2);
             result.put("code", 0);
             result.put("data", messages);
@@ -59,9 +72,13 @@ public class MessageController {
     }
 
     @GetMapping("/contacts/{userId}")
-    public Map<String, Object> getContacts(@PathVariable Long userId) {
+    public Map<String, Object> getContacts(HttpServletRequest request, @PathVariable Long userId) {
         Map<String, Object> result = new HashMap<>();
         try {
+            Long currentUserId = (Long) request.getAttribute("currentUserId");
+            if (!currentUserId.equals(userId)) {
+                throw new RuntimeException("Not allowed to view these contacts");
+            }
             List<Map<String, Object>> contacts = messageService.getContacts(userId);
             result.put("code", 0);
             result.put("data", contacts);
@@ -73,9 +90,13 @@ public class MessageController {
     }
 
     @GetMapping("/unread/{userId}")
-    public Map<String, Object> getUnreadMessages(@PathVariable Long userId) {
+    public Map<String, Object> getUnreadMessages(HttpServletRequest request, @PathVariable Long userId) {
         Map<String, Object> result = new HashMap<>();
         try {
+            Long currentUserId = (Long) request.getAttribute("currentUserId");
+            if (!currentUserId.equals(userId)) {
+                throw new RuntimeException("Not allowed to view unread messages");
+            }
             List<Message> messages = messageService.getUnreadMessages(userId);
             result.put("code", 0);
             result.put("data", messages);
