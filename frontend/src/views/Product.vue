@@ -29,7 +29,13 @@
         class="product-card"
         @click="viewProductDetail(product)"
       >
-        <div class="product-image">?</div>
+        <img
+          v-if="getProductImage(product)"
+          :src="getProductImage(product)"
+          alt="product"
+          class="product-image preview-image"
+        />
+        <div v-else class="product-image">?</div>
         <div class="product-info">
           <h3>{{ product.title }}</h3>
           <p class="price">?{{ product.price }}</p>
@@ -65,6 +71,24 @@
             <el-option label="其他" value="其他"></el-option>
           </el-select>
         </el-form-item>
+        <el-form-item label="Image">
+          <div class="upload-block">
+            <el-upload
+              :show-file-list="false"
+              :http-request="uploadProductImage"
+              :before-upload="beforeImageUpload"
+              accept=".jpg,.jpeg,.png,.gif,.webp"
+            >
+              <el-button type="primary" :loading="imageUploading">Upload Image</el-button>
+            </el-upload>
+            <img
+              v-if="publishForm.images"
+              :src="resolveImageUrl(publishForm.images)"
+              alt="product preview"
+              class="upload-preview"
+            />
+          </div>
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="showPublishDialog = false">取消</el-button>
@@ -76,6 +100,12 @@
     <el-dialog v-model="showDetailDialog" title="商品详情" width="700px">
       <div v-if="selectedProduct">
         <h2>{{ selectedProduct.title }}</h2>
+        <img
+          v-if="getProductImage(selectedProduct)"
+          :src="getProductImage(selectedProduct)"
+          alt="product detail"
+          class="detail-image"
+        />
         <p class="detail-price">?{{ selectedProduct.price }}</p>
         <p><strong>分类：</strong><el-tag>{{ selectedProduct.category }}</el-tag></p>
         <p><strong>描述：</strong>{{ selectedProduct.description }}</p>
@@ -87,7 +117,7 @@
 </template>
 
 <script>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from '../utils/axios'
 import { ElMessage } from 'element-plus'
@@ -104,13 +134,62 @@ export default {
     const showDetailDialog = ref(false)
     const selectedProduct = ref(null)
     const publishing = ref(false)
+    const imageUploading = ref(false)
 
     const publishForm = ref({
       title: '',
       description: '',
       price: 0,
-      category: ''
+      category: '',
+      images: ''
     })
+
+    const resolveImageUrl = (url) => {
+      if (!url) {
+        return ''
+      }
+      return url.startsWith('http') ? url : url
+    }
+
+    const getProductImage = (product) => resolveImageUrl(product?.images || '')
+
+    const beforeImageUpload = (file) => {
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+      if (!allowedTypes.includes(file.type)) {
+        ElMessage.error('Only jpg, jpeg, png, gif, webp images are allowed')
+        return false
+      }
+      if (file.size / 1024 / 1024 > 5) {
+        ElMessage.error('Image size must be 5MB or less')
+        return false
+      }
+      return true
+    }
+
+    const uploadProductImage = async ({ file, onSuccess, onError }) => {
+      imageUploading.value = true
+      try {
+        const formData = new FormData()
+        formData.append('image', file)
+        const res = await axios.post('/upload/image', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        })
+        if (res.code === 0) {
+          publishForm.value.images = res.data.url
+          ElMessage.success('Image uploaded')
+          onSuccess?.(res.data)
+        } else {
+          throw new Error(res.msg || 'Upload failed')
+        }
+      } catch (error) {
+        ElMessage.error(error.response?.data?.msg || error.message || 'Upload failed')
+        onError?.(error)
+      } finally {
+        imageUploading.value = false
+      }
+    }
 
     const loadProducts = async () => {
       try {
@@ -147,6 +226,7 @@ export default {
       }
       publishing.value = true
       try {
+        const preferenceKeyword = publishForm.value.category
         const res = await axios.post('/product/publish', {
           sellerId: currentUser.id,
           ...publishForm.value
@@ -154,13 +234,13 @@ export default {
         if (res.code === 0) {
           ElMessage.success('发布成功')
           showPublishDialog.value = false
-          publishForm.value = { title: '', description: '', price: 0, category: '' }
+          publishForm.value = { title: '', description: '', price: 0, category: '', images: '' }
           loadProducts()
           // 记录偏好
           await axios.post('/recommend/preference', {
             userId: currentUser.id,
             category: 'product',
-            keyword: publishForm.value.category
+            keyword: preferenceKeyword
           })
         } else {
           ElMessage.error(res.msg || '发布失败')
@@ -208,7 +288,12 @@ export default {
       showDetailDialog,
       selectedProduct,
       publishing,
+      imageUploading,
       publishForm,
+      resolveImageUrl,
+      getProductImage,
+      beforeImageUpload,
+      uploadProductImage,
       handleCategoryChange,
       handleSearch,
       handlePublish,
@@ -257,6 +342,26 @@ export default {
   margin-bottom: 10px;
 }
 
+.preview-image {
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.upload-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.upload-preview {
+  width: 160px;
+  height: 160px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #dcdfe6;
+}
+
 .product-info h3 {
   margin-bottom: 10px;
   color: #333;
@@ -291,5 +396,12 @@ export default {
   font-weight: bold;
   margin: 15px 0;
 }
-</style>
 
+.detail-image {
+  width: 100%;
+  max-height: 320px;
+  object-fit: cover;
+  border-radius: 12px;
+  margin: 12px 0 16px;
+}
+</style>

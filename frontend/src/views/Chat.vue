@@ -22,7 +22,15 @@
               :class="{ active: selectedContact?.userId === contact.userId }"
               @click="selectContact(contact)"
             >
-              <div class="contact-avatar">{{ getAvatarText(contact) }}</div>
+              <div class="contact-avatar avatar-shell">
+                <img
+                  v-if="contact.avatar"
+                  :src="resolveAvatarUrl(contact.avatar)"
+                  alt="contact avatar"
+                  class="avatar-image"
+                />
+                <span v-else>{{ getAvatarText(contact) }}</span>
+              </div>
               <div class="contact-info">
                 <div class="contact-name">{{ getContactName(contact) }}</div>
                 <div class="contact-last-msg">{{ contact.lastMessage?.content || 'No messages yet' }}</div>
@@ -51,7 +59,18 @@
                 :key="user.id"
                 class="friend-row"
               >
-                <span>{{ getContactName(user) }}</span>
+                <div class="friend-user">
+                  <div class="mini-avatar avatar-shell">
+                    <img
+                      v-if="user.avatar"
+                      :src="resolveAvatarUrl(user.avatar)"
+                      alt="user avatar"
+                      class="avatar-image"
+                    />
+                    <span v-else>{{ getAvatarText(user) }}</span>
+                  </div>
+                  <span>{{ getContactName(user) }}</span>
+                </div>
                 <el-button size="small" type="primary" @click="sendFriendRequest(user.id)">Add</el-button>
               </div>
             </div>
@@ -65,7 +84,18 @@
               :key="request.id"
               class="friend-row"
             >
-              <span>{{ getContactName(request) }}</span>
+              <div class="friend-user">
+                <div class="mini-avatar avatar-shell">
+                  <img
+                    v-if="request.avatar"
+                    :src="resolveAvatarUrl(request.avatar)"
+                    alt="request avatar"
+                    class="avatar-image"
+                  />
+                  <span v-else>{{ getAvatarText(request) }}</span>
+                </div>
+                <span>{{ getContactName(request) }}</span>
+              </div>
               <div class="friend-actions">
                 <el-button size="small" type="success" @click="acceptFriendRequest(request.id)">Accept</el-button>
                 <el-button size="small" @click="rejectFriendRequest(request.id)">Reject</el-button>
@@ -78,7 +108,18 @@
       <el-col :span="17">
         <el-card v-if="selectedContact" class="chat-card">
           <div class="chat-header">
-            <h3>{{ getContactName(selectedContact) }}</h3>
+            <div class="chat-header-user">
+              <div class="header-avatar avatar-shell">
+                <img
+                  v-if="selectedContact.avatar"
+                  :src="resolveAvatarUrl(selectedContact.avatar)"
+                  alt="selected contact avatar"
+                  class="avatar-image"
+                />
+                <span v-else>{{ getAvatarText(selectedContact) }}</span>
+              </div>
+              <h3>{{ getContactName(selectedContact) }}</h3>
+            </div>
           </div>
           <div ref="messagesContainer" class="messages-container">
             <div
@@ -87,8 +128,21 @@
               class="message-item"
               :class="{ 'message-right': message.senderId === currentUser.id }"
             >
-              <div class="message-content">{{ message.content }}</div>
-              <div class="message-time">{{ formatTime(message.createTime) }}</div>
+              <div class="message-row">
+                <div class="message-avatar avatar-shell">
+                  <img
+                    v-if="getMessageAvatar(message)"
+                    :src="resolveAvatarUrl(getMessageAvatar(message))"
+                    alt="message avatar"
+                    class="avatar-image"
+                  />
+                  <span v-else>{{ getAvatarText(getMessageUser(message)) }}</span>
+                </div>
+                <div class="message-body">
+                  <div class="message-content">{{ message.content }}</div>
+                  <div class="message-time">{{ formatTime(message.createTime) }}</div>
+                </div>
+              </div>
             </div>
           </div>
           <div class="chat-input">
@@ -178,12 +232,33 @@ export default {
       })
     }
 
+    const resolveAvatarUrl = (url) => {
+      if (!url) {
+        return ''
+      }
+      return url.startsWith('http') ? url : url
+    }
+
     const getAvatarText = (contact) => {
       return getContactDisplayName(contact).slice(0, 1).toUpperCase()
     }
 
     const getContactName = (contact) => {
       return getContactDisplayName(contact)
+    }
+
+    const getMessageUser = (message) => {
+      if (message.senderId === currentUser.id) {
+        return currentUser
+      }
+      return selectedContact.value || {}
+    }
+
+    const getMessageAvatar = (message) => {
+      if (message.senderId === currentUser.id) {
+        return currentUser.avatar || ''
+      }
+      return selectedContact.value?.avatar || ''
     }
 
     const applyUnreadState = () => {
@@ -452,11 +527,14 @@ export default {
       friendSearchResults,
       getAvatarText,
       getContactName,
+      getMessageAvatar,
+      getMessageUser,
       incomingRequests,
       messages,
       messagesContainer,
       newMessage,
       rejectFriendRequest,
+      resolveAvatarUrl,
       searchKeyword,
       searchUsers,
       selectedContact,
@@ -516,6 +594,10 @@ export default {
 .contact-avatar {
   width: 40px;
   height: 40px;
+  margin-right: 10px;
+}
+
+.avatar-shell {
   border-radius: 50%;
   background-color: #409eff;
   color: white;
@@ -523,7 +605,15 @@ export default {
   align-items: center;
   justify-content: center;
   font-weight: bold;
-  margin-right: 10px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .contact-info {
@@ -579,6 +669,19 @@ export default {
   padding: 8px 0;
 }
 
+.friend-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.mini-avatar {
+  width: 32px;
+  height: 32px;
+  font-size: 12px;
+}
+
 .empty-tip {
   color: #909399;
   font-size: 13px;
@@ -596,6 +699,18 @@ export default {
   margin-bottom: 10px;
 }
 
+.chat-header-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-avatar {
+  width: 44px;
+  height: 44px;
+  font-size: 16px;
+}
+
 .messages-container {
   flex: 1;
   overflow-y: auto;
@@ -606,18 +721,37 @@ export default {
 
 .message-item {
   margin-bottom: 15px;
-  display: flex;
-  flex-direction: column;
 }
 
 .message-item.message-right {
   align-items: flex-end;
 }
 
+.message-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.message-right .message-row {
+  flex-direction: row-reverse;
+}
+
+.message-avatar {
+  width: 36px;
+  height: 36px;
+  font-size: 14px;
+}
+
+.message-body {
+  display: flex;
+  flex-direction: column;
+  max-width: 70%;
+}
+
 .message-content {
   padding: 10px 15px;
   border-radius: 10px;
-  max-width: 70%;
   background-color: white;
   word-wrap: break-word;
 }
