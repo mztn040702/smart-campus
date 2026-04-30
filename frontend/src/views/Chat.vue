@@ -4,13 +4,13 @@
       <el-col :span="7">
         <el-card class="contacts-card">
           <div class="contacts-header">
-            <h3>Friends</h3>
+            <h3>好友列表</h3>
             <el-tag :type="connectionTagType" size="small">{{ connectionStatusLabel }}</el-tag>
           </div>
 
           <el-input
             v-model="searchKeyword"
-            placeholder="Search friends"
+            placeholder="搜索好友"
             style="margin-bottom: 10px;"
           />
 
@@ -33,7 +33,7 @@
               </div>
               <div class="contact-info">
                 <div class="contact-name">{{ getContactName(contact) }}</div>
-                <div class="contact-last-msg">{{ contact.lastMessage?.content || 'No messages yet' }}</div>
+                <div class="contact-last-msg">{{ contact.lastMessage?.content || '暂无消息' }}</div>
               </div>
               <el-badge
                 v-if="contact.unreadCount > 0"
@@ -44,14 +44,14 @@
           </div>
 
           <div class="friend-panel">
-            <h4>Add Friend</h4>
+            <h4>添加好友</h4>
             <div class="friend-search-row">
               <el-input
                 v-model="friendSearchKeyword"
-                placeholder="Search users"
+                placeholder="搜索用户"
                 @keyup.enter="searchUsers"
               />
-              <el-button type="primary" @click="searchUsers">Search</el-button>
+              <el-button type="primary" @click="searchUsers">搜索</el-button>
             </div>
             <div class="friend-search-results">
               <div
@@ -71,14 +71,14 @@
                   </div>
                   <span>{{ getContactName(user) }}</span>
                 </div>
-                <el-button size="small" type="primary" @click="sendFriendRequest(user.id)">Add</el-button>
+                <el-button size="small" type="primary" @click="sendFriendRequest(user.id)">添加</el-button>
               </div>
             </div>
           </div>
 
           <div class="friend-panel">
-            <h4>Incoming Requests</h4>
-            <div v-if="incomingRequests.length === 0" class="empty-tip">No pending requests</div>
+            <h4>收到的好友申请</h4>
+            <div v-if="incomingRequests.length === 0" class="empty-tip">暂无待处理申请</div>
             <div
               v-for="request in incomingRequests"
               :key="request.id"
@@ -97,8 +97,8 @@
                 <span>{{ getContactName(request) }}</span>
               </div>
               <div class="friend-actions">
-                <el-button size="small" type="success" @click="acceptFriendRequest(request.id)">Accept</el-button>
-                <el-button size="small" @click="rejectFriendRequest(request.id)">Reject</el-button>
+                <el-button size="small" type="success" @click="acceptFriendRequest(request.id)">接受</el-button>
+                <el-button size="small" @click="rejectFriendRequest(request.id)">拒绝</el-button>
               </div>
             </div>
           </div>
@@ -150,13 +150,13 @@
               v-model="newMessage"
               type="textarea"
               :rows="3"
-              placeholder="Press Ctrl+Enter to send"
+              placeholder="按 Ctrl+Enter 发送消息"
               @keyup.ctrl.enter="sendMessage"
             />
-            <el-button type="primary" @click="sendMessage" style="margin-top: 10px;">Send</el-button>
+            <el-button type="primary" @click="sendMessage" style="margin-top: 10px;">发送</el-button>
           </div>
         </el-card>
-        <el-empty v-else description="Select a friend to start chatting" />
+        <el-empty v-else description="请选择一个好友开始聊天" />
       </el-col>
     </el-row>
   </div>
@@ -206,10 +206,10 @@ export default {
 
     const connectionStatusLabel = computed(() => {
       const labels = {
-        connecting: 'Connecting',
-        connected: 'Connected',
-        disconnected: 'Disconnected',
-        error: 'Auth Failed'
+        connecting: '连接中',
+        connected: '已连接',
+        disconnected: '已断开',
+        error: '认证失败'
       }
       return labels[connectionStatus.value] || connectionStatus.value
     })
@@ -275,7 +275,7 @@ export default {
           incomingRequests.value = mapIncomingFriendRequests(res.data)
         }
       } catch (error) {
-        console.error('Failed to load incoming requests:', error)
+        console.error('加载好友申请失败：', error)
       }
     }
 
@@ -288,7 +288,7 @@ export default {
 
         contacts.value = mergeContactsWithMessageMeta(contacts.value, res.data, unreadMap.value)
       } catch (error) {
-        console.error('Failed to load contact message metadata:', error)
+        console.error('加载会话摘要失败：', error)
       }
     }
 
@@ -309,7 +309,7 @@ export default {
           }
         }
       } catch (error) {
-        console.error('Failed to load friend contacts:', error)
+        console.error('加载好友列表失败：', error)
       }
     }
 
@@ -325,7 +325,7 @@ export default {
         messages.value = res.data
         scrollToBottom()
       } else {
-        throw new Error(res.msg || 'Failed to load conversation')
+        throw new Error(res.msg || '加载聊天记录失败')
       }
     }
 
@@ -336,7 +336,7 @@ export default {
       try {
         await loadConversation(contact)
       } catch (error) {
-        ElMessage.error(error.message || 'Failed to load conversation')
+        ElMessage.error(error.message || '加载聊天记录失败')
       }
     }
 
@@ -376,7 +376,7 @@ export default {
     const connectWebSocket = () => {
       if (!token) {
         connectionStatus.value = 'error'
-        ElMessage.error('Missing token, cannot connect to chat')
+        ElMessage.error('缺少登录凭证，无法连接聊天服务')
         return
       }
 
@@ -393,7 +393,7 @@ export default {
       ws.onmessage = async (event) => {
         const payload = JSON.parse(event.data)
         if (payload.type === 'error') {
-          ElMessage.error(payload.message || 'WebSocket error')
+          ElMessage.error(payload.message || '聊天连接异常')
           return
         }
 
@@ -423,7 +423,7 @@ export default {
       }
 
       if (!socket.value || !socketReady.value) {
-        ElMessage.error('WebSocket is not connected')
+        ElMessage.error('聊天连接未建立')
         return
       }
 
@@ -443,10 +443,10 @@ export default {
         if (res.code === 0) {
           friendSearchResults.value = res.data
         } else {
-          ElMessage.error(res.msg || 'Failed to search users')
+          ElMessage.error(res.msg || '搜索用户失败')
         }
       } catch (error) {
-        ElMessage.error('Failed to search users')
+        ElMessage.error('搜索用户失败')
       }
     }
 
@@ -454,13 +454,13 @@ export default {
       try {
         const res = await axios.post('/friends/request', { receiverId })
         if (res.code === 0) {
-          ElMessage.success('Friend request sent')
+          ElMessage.success('好友申请已发送')
           friendSearchResults.value = friendSearchResults.value.filter((user) => user.id !== receiverId)
         } else {
-          ElMessage.error(res.msg || 'Failed to send friend request')
+          ElMessage.error(res.msg || '发送好友申请失败')
         }
       } catch (error) {
-        ElMessage.error(error.response?.data?.msg || 'Failed to send friend request')
+        ElMessage.error(error.response?.data?.msg || '发送好友申请失败')
       }
     }
 
@@ -468,13 +468,13 @@ export default {
       try {
         const res = await axios.post(`/friends/requests/${requestId}/accept`)
         if (res.code === 0) {
-          ElMessage.success('Friend request accepted')
+          ElMessage.success('已接受好友申请')
           await Promise.all([loadIncomingRequests(), loadContacts()])
         } else {
-          ElMessage.error(res.msg || 'Failed to accept friend request')
+          ElMessage.error(res.msg || '接受好友申请失败')
         }
       } catch (error) {
-        ElMessage.error(error.response?.data?.msg || 'Failed to accept friend request')
+        ElMessage.error(error.response?.data?.msg || '接受好友申请失败')
       }
     }
 
@@ -482,13 +482,13 @@ export default {
       try {
         const res = await axios.post(`/friends/requests/${requestId}/reject`)
         if (res.code === 0) {
-          ElMessage.success('Friend request rejected')
+          ElMessage.success('已拒绝好友申请')
           await loadIncomingRequests()
         } else {
-          ElMessage.error(res.msg || 'Failed to reject friend request')
+          ElMessage.error(res.msg || '拒绝好友申请失败')
         }
       } catch (error) {
-        ElMessage.error(error.response?.data?.msg || 'Failed to reject friend request')
+        ElMessage.error(error.response?.data?.msg || '拒绝好友申请失败')
       }
     }
 

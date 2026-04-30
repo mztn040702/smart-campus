@@ -1,19 +1,19 @@
 <template>
   <div class="login-container">
     <el-card class="login-card">
-      <h2>Smart Campus - Login</h2>
+      <h2>智慧校园系统 - 登录</h2>
       <el-form :model="form" label-width="80px" style="margin-top: 30px;">
-        <el-form-item label="User">
-          <el-input v-model="form.username" placeholder="Enter username"></el-input>
+        <el-form-item label="用户名">
+          <el-input v-model="form.username" placeholder="请输入用户名"></el-input>
         </el-form-item>
-        <el-form-item label="Password">
-          <el-input v-model="form.password" type="password" placeholder="Enter password" @keyup.enter="handleLogin"></el-input>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="handleLogin" :loading="loading" style="width: 100%;">Login</el-button>
+        <el-form-item label="密码">
+          <el-input v-model="form.password" type="password" placeholder="请输入密码" @keyup.enter="handleLogin"></el-input>
         </el-form-item>
         <el-form-item>
-          <el-link type="primary" @click="$router.push('/register')">No account? Register now</el-link>
+          <el-button type="primary" @click="handleLogin" :loading="loading" style="width: 100%;">登录</el-button>
+        </el-form-item>
+        <el-form-item>
+          <el-link type="primary" @click="$router.push('/register')">还没有账号？立即注册</el-link>
         </el-form-item>
       </el-form>
     </el-card>
@@ -40,7 +40,7 @@ export default {
 
     const handleLogin = async () => {
       if (!form.value.username || !form.value.password) {
-        ElMessage.warning('Please enter username and password')
+        ElMessage.warning('请输入用户名和密码')
         return
       }
       loading.value = true
@@ -48,13 +48,13 @@ export default {
         const res = await axios.post('/user/login', form.value)
         if (res.code === 0) {
           saveSession(res.data, res.token)
-          ElMessage.success('Login successful')
+          ElMessage.success('登录成功')
           router.push(route.query.redirect || '/home')
         } else {
-          ElMessage.error(res.msg || 'Login failed')
+          ElMessage.error(res.msg || '登录失败')
         }
       } catch (error) {
-        ElMessage.error('Login failed: ' + (error.response?.data?.msg || error.message))
+        ElMessage.error('登录失败：' + (error.response?.data?.msg || error.message))
       } finally {
         loading.value = false
       }

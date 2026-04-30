@@ -16,48 +16,55 @@ const routes = [
     path: '/login',
     name: 'Login',
     component: Login,
-    meta: { public: true }
+    meta: { public: true, title: '登录' }
   },
   {
     path: '/register',
     name: 'Register',
     component: Register,
-    meta: { public: true }
+    meta: { public: true, title: '注册' }
   },
   {
     path: '/home',
     name: 'Home',
-    component: Home
+    component: Home,
+    meta: { title: '首页' }
   },
   {
     path: '/chat',
     name: 'Chat',
-    component: Chat
+    component: Chat,
+    meta: { title: '聊天' }
   },
   {
     path: '/product',
     name: 'Product',
-    component: Product
+    component: Product,
+    meta: { title: '商品' }
   },
   {
     path: '/job',
     name: 'Job',
-    component: Job
+    component: Job,
+    meta: { title: '招聘' }
   },
   {
     path: '/help',
     name: 'Help',
-    component: Help
+    component: Help,
+    meta: { title: '互助' }
   },
   {
     path: '/profile',
     name: 'Profile',
-    component: Profile
+    component: Profile,
+    meta: { title: '个人中心' }
   },
   {
     path: '/admin',
     name: 'Admin',
-    component: Admin
+    component: Admin,
+    meta: { title: '管理后台' }
   },
   {
     path: '/',
@@ -85,6 +92,11 @@ router.beforeEach((to) => {
   }
 
   return true
+})
+
+router.afterEach((to) => {
+  const pageTitle = to.meta?.title
+  document.title = pageTitle ? `${pageTitle} - 智慧校园系统` : '智慧校园系统'
 })
 
 export default router

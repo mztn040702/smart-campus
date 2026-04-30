@@ -2,25 +2,50 @@
   <div class="product-container">
     <div class="header-actions">
       <el-button type="primary" @click="showPublishDialog = true">发布商品</el-button>
-      <el-input
-        v-model="searchKeyword"
-        placeholder="搜索商品..."
-        style="width: 300px; margin-left: 20px;"
-        @keyup.enter="handleSearch"
-      >
-        <template #append>
-          <el-button @click="handleSearch">搜索</el-button>
-        </template>
-      </el-input>
     </div>
 
-    <el-tabs v-model="activeCategory" @tab-change="handleCategoryChange">
-      <el-tab-pane label="全部" name=""></el-tab-pane>
-      <el-tab-pane label="书籍" name="书籍"></el-tab-pane>
-      <el-tab-pane label="电子产品" name="电子产品"></el-tab-pane>
-      <el-tab-pane label="生活用品" name="生活用品"></el-tab-pane>
-      <el-tab-pane label="其他" name="其他"></el-tab-pane>
-    </el-tabs>
+    <el-card class="filter-panel" shadow="never">
+      <div class="filter-grid">
+        <el-input
+          v-model="filters.keyword"
+          placeholder="搜索商品关键词"
+          clearable
+          @keyup.enter="handleSearch"
+        />
+        <el-select v-model="filters.category" placeholder="全部分类" clearable>
+          <el-option
+            v-for="category in productCategories"
+            :key="category.value"
+            :label="category.label"
+            :value="category.value"
+          />
+        </el-select>
+        <el-input-number
+          v-model="filters.minPrice"
+          :min="0"
+          :precision="2"
+          :controls="false"
+          placeholder="最低价"
+        />
+        <el-input-number
+          v-model="filters.maxPrice"
+          :min="0"
+          :precision="2"
+          :controls="false"
+          placeholder="最高价"
+        />
+        <el-select v-model="filters.sort" placeholder="排序方式">
+          <el-option label="最新发布" value="latest" />
+          <el-option label="价格从低到高" value="priceAsc" />
+          <el-option label="价格从高到低" value="priceDesc" />
+          <el-option label="浏览量优先" value="viewsDesc" />
+        </el-select>
+        <div class="filter-actions">
+          <el-button type="primary" @click="handleSearch">搜索</el-button>
+          <el-button @click="resetFilters">重置</el-button>
+        </div>
+      </div>
+    </el-card>
 
     <div class="products-grid">
       <el-card
@@ -35,22 +60,21 @@
           alt="product"
           class="product-image preview-image"
         />
-        <div v-else class="product-image">?</div>
+        <div v-else class="product-image">暂无图片</div>
         <div class="product-info">
           <h3>{{ product.title }}</h3>
-          <p class="price">?{{ product.price }}</p>
+          <p class="price">￥{{ product.price }}</p>
           <p class="description">{{ product.description }}</p>
-          <el-tag size="small">{{ product.category }}</el-tag>
+          <el-tag size="small">{{ getCategoryLabel(product.category) }}</el-tag>
           <p class="view-count">浏览 {{ product.viewCount }} 次</p>
         </div>
       </el-card>
     </div>
 
-    <!-- 发布商品对话框 -->
     <el-dialog v-model="showPublishDialog" title="发布商品" width="600px">
       <el-form :model="publishForm" label-width="100px">
         <el-form-item label="商品标题" required>
-          <el-input v-model="publishForm.title" placeholder="请输入商品标题"></el-input>
+          <el-input v-model="publishForm.title" placeholder="请输入商品标题" />
         </el-form-item>
         <el-form-item label="商品描述" required>
           <el-input
@@ -58,20 +82,27 @@
             type="textarea"
             :rows="4"
             placeholder="请输入商品描述"
-          ></el-input>
+          />
         </el-form-item>
         <el-form-item label="价格" required>
-          <el-input-number v-model="publishForm.price" :min="0" :precision="2" style="width: 100%;"></el-input-number>
+          <el-input-number
+            v-model="publishForm.price"
+            :min="0"
+            :precision="2"
+            style="width: 100%;"
+          />
         </el-form-item>
         <el-form-item label="分类" required>
           <el-select v-model="publishForm.category" placeholder="请选择分类" style="width: 100%;">
-            <el-option label="书籍" value="书籍"></el-option>
-            <el-option label="电子产品" value="电子产品"></el-option>
-            <el-option label="生活用品" value="生活用品"></el-option>
-            <el-option label="其他" value="其他"></el-option>
+            <el-option
+              v-for="category in productCategories"
+              :key="`publish-${category.value}`"
+              :label="category.label"
+              :value="category.value"
+            />
           </el-select>
         </el-form-item>
-        <el-form-item label="Image">
+        <el-form-item label="商品图片">
           <div class="upload-block">
             <el-upload
               :show-file-list="false"
@@ -79,7 +110,7 @@
               :before-upload="beforeImageUpload"
               accept=".jpg,.jpeg,.png,.gif,.webp"
             >
-              <el-button type="primary" :loading="imageUploading">Upload Image</el-button>
+              <el-button type="primary" :loading="imageUploading">上传图片</el-button>
             </el-upload>
             <img
               v-if="publishForm.images"
@@ -96,7 +127,6 @@
       </template>
     </el-dialog>
 
-    <!-- 商品详情对话框 -->
     <el-dialog v-model="showDetailDialog" title="商品详情" width="700px">
       <div v-if="selectedProduct">
         <h2>{{ selectedProduct.title }}</h2>
@@ -106,8 +136,8 @@
           alt="product detail"
           class="detail-image"
         />
-        <p class="detail-price">?{{ selectedProduct.price }}</p>
-        <p><strong>分类：</strong><el-tag>{{ selectedProduct.category }}</el-tag></p>
+        <p class="detail-price">￥{{ selectedProduct.price }}</p>
+        <p><strong>分类：</strong><el-tag>{{ getCategoryLabel(selectedProduct.category) }}</el-tag></p>
         <p><strong>描述：</strong>{{ selectedProduct.description }}</p>
         <p><strong>浏览次数：</strong>{{ selectedProduct.viewCount }}</p>
         <el-button type="primary" @click="contactSeller">联系卖家</el-button>
@@ -122,19 +152,43 @@ import { useRouter } from 'vue-router'
 import axios from '../utils/axios'
 import { ElMessage } from 'element-plus'
 
+const productCategories = [
+  { label: '书籍', value: 'books' },
+  { label: '电子产品', value: 'electronics' },
+  { label: '生活用品', value: 'daily' },
+  { label: '其他', value: 'other' }
+]
+
+const productCategoryLabels = {
+  books: '书籍',
+  书籍: '书籍',
+  electronics: '电子产品',
+  电子产品: '电子产品',
+  daily: '生活用品',
+  'daily用品': '生活用品',
+  生活用品: '生活用品',
+  other: '其他',
+  其他: '其他'
+}
+
 export default {
   name: 'Product',
   setup() {
     const router = useRouter()
     const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
     const products = ref([])
-    const activeCategory = ref('')
-    const searchKeyword = ref('')
     const showPublishDialog = ref(false)
     const showDetailDialog = ref(false)
     const selectedProduct = ref(null)
     const publishing = ref(false)
     const imageUploading = ref(false)
+    const filters = ref({
+      keyword: '',
+      category: '',
+      minPrice: null,
+      maxPrice: null,
+      sort: 'latest'
+    })
 
     const publishForm = ref({
       title: '',
@@ -152,15 +206,39 @@ export default {
     }
 
     const getProductImage = (product) => resolveImageUrl(product?.images || '')
+    const getCategoryLabel = (category) => productCategoryLabels[category] || category
+
+    const buildProductQueryParams = () => {
+      const params = {}
+      if (currentUser.id) {
+        params.userId = currentUser.id
+      }
+      if (filters.value.keyword) {
+        params.keyword = filters.value.keyword.trim()
+      }
+      if (filters.value.category) {
+        params.category = filters.value.category
+      }
+      if (filters.value.minPrice !== null && filters.value.minPrice !== undefined) {
+        params.minPrice = filters.value.minPrice
+      }
+      if (filters.value.maxPrice !== null && filters.value.maxPrice !== undefined) {
+        params.maxPrice = filters.value.maxPrice
+      }
+      if (filters.value.sort) {
+        params.sort = filters.value.sort
+      }
+      return params
+    }
 
     const beforeImageUpload = (file) => {
       const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
       if (!allowedTypes.includes(file.type)) {
-        ElMessage.error('Only jpg, jpeg, png, gif, webp images are allowed')
+        ElMessage.error('仅支持 jpg、jpeg、png、gif、webp 图片')
         return false
       }
       if (file.size / 1024 / 1024 > 5) {
-        ElMessage.error('Image size must be 5MB or less')
+        ElMessage.error('图片大小不能超过 5MB')
         return false
       }
       return true
@@ -178,13 +256,13 @@ export default {
         })
         if (res.code === 0) {
           publishForm.value.images = res.data.url
-          ElMessage.success('Image uploaded')
+          ElMessage.success('图片上传成功')
           onSuccess?.(res.data)
         } else {
-          throw new Error(res.msg || 'Upload failed')
+          throw new Error(res.msg || '上传失败')
         }
       } catch (error) {
-        ElMessage.error(error.response?.data?.msg || error.message || 'Upload failed')
+        ElMessage.error(error.response?.data?.msg || error.message || '上传失败')
         onError?.(error)
       } finally {
         imageUploading.value = false
@@ -193,29 +271,27 @@ export default {
 
     const loadProducts = async () => {
       try {
-        let res
-        if (searchKeyword.value) {
-          res = await axios.get('/product/search', { params: { keyword: searchKeyword.value } })
-        } else if (activeCategory.value) {
-          res = await axios.get('/product/list', { params: { category: activeCategory.value } })
-        } else {
-          res = await axios.get('/product/list')
-        }
+        const res = await axios.get('/product/list', { params: buildProductQueryParams() })
         if (res.code === 0) {
           products.value = res.data
         }
       } catch (error) {
-        console.error('加载商品失败:', error)
+        console.error('加载商品失败：', error)
       }
     }
 
-    const handleCategoryChange = () => {
-      searchKeyword.value = ''
+    const handleSearch = () => {
       loadProducts()
     }
 
-    const handleSearch = () => {
-      activeCategory.value = ''
+    const resetFilters = () => {
+      filters.value = {
+        keyword: '',
+        category: '',
+        minPrice: null,
+        maxPrice: null,
+        sort: 'latest'
+      }
       loadProducts()
     }
 
@@ -236,7 +312,6 @@ export default {
           showPublishDialog.value = false
           publishForm.value = { title: '', description: '', price: 0, category: '', images: '' }
           loadProducts()
-          // 记录偏好
           await axios.post('/recommend/preference', {
             userId: currentUser.id,
             category: 'product',
@@ -254,11 +329,14 @@ export default {
 
     const viewProductDetail = async (product) => {
       try {
-        const res = await axios.get(`/product/${product.id}`)
+        const res = await axios.get(`/product/${product.id}`, {
+          params: {
+            userId: currentUser.id
+          }
+        })
         if (res.code === 0) {
           selectedProduct.value = res.data
           showDetailDialog.value = true
-          // 记录偏好
           await axios.post('/recommend/preference', {
             userId: currentUser.id,
             category: 'product',
@@ -266,7 +344,7 @@ export default {
           })
         }
       } catch (error) {
-        ElMessage.error('加载详情失败')
+        ElMessage.error('加载商品详情失败')
       }
     }
 
@@ -282,8 +360,8 @@ export default {
 
     return {
       products,
-      activeCategory,
-      searchKeyword,
+      productCategories,
+      filters,
       showPublishDialog,
       showDetailDialog,
       selectedProduct,
@@ -291,11 +369,13 @@ export default {
       imageUploading,
       publishForm,
       resolveImageUrl,
+      getCategoryLabel,
       getProductImage,
+      buildProductQueryParams,
       beforeImageUpload,
       uploadProductImage,
-      handleCategoryChange,
       handleSearch,
+      resetFilters,
       handlePublish,
       viewProductDetail,
       contactSeller
@@ -313,6 +393,23 @@ export default {
   display: flex;
   align-items: center;
   margin-bottom: 20px;
+  justify-content: space-between;
+}
+
+.filter-panel {
+  margin-bottom: 20px;
+}
+
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
 }
 
 .products-grid {
@@ -338,7 +435,8 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 60px;
+  font-size: 20px;
+  color: #909399;
   margin-bottom: 10px;
 }
 

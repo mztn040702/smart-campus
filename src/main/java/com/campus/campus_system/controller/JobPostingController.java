@@ -2,6 +2,7 @@ package com.campus.campus_system.controller;
 
 import com.campus.campus_system.entity.JobPosting;
 import com.campus.campus_system.service.JobPostingService;
+import com.campus.campus_system.service.UserBehaviorService;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -21,9 +22,12 @@ import java.util.Map;
 @CrossOrigin(origins = "*")
 public class JobPostingController {
     private final JobPostingService jobPostingService;
+    private final UserBehaviorService userBehaviorService;
 
-    public JobPostingController(JobPostingService jobPostingService) {
+    public JobPostingController(JobPostingService jobPostingService,
+                                UserBehaviorService userBehaviorService) {
         this.jobPostingService = jobPostingService;
+        this.userBehaviorService = userBehaviorService;
     }
 
     @PostMapping("/publish")
@@ -58,14 +62,20 @@ public class JobPostingController {
     }
 
     @GetMapping("/list")
-    public Map<String, Object> getAllJobs(@RequestParam(required = false) String jobType) {
+    public Map<String, Object> getAllJobs(@RequestParam(required = false) String keyword,
+                                          @RequestParam(required = false) Long userId,
+                                          @RequestParam(required = false) String location,
+                                          @RequestParam(required = false) String jobType,
+                                          @RequestParam(required = false) BigDecimal minSalary,
+                                          @RequestParam(required = false) BigDecimal maxSalary,
+                                          @RequestParam(required = false, defaultValue = "latest") String sort) {
         Map<String, Object> result = new HashMap<>();
         try {
-            List<JobPosting> jobs;
-            if (jobType != null && !jobType.isEmpty()) {
-                jobs = jobPostingService.getJobsByType(jobType);
-            } else {
-                jobs = jobPostingService.getAllActiveJobs();
+            List<JobPosting> jobs = jobPostingService.queryJobs(
+                    keyword, location, jobType, minSalary, maxSalary, sort
+            );
+            if (keyword != null && !keyword.isBlank()) {
+                userBehaviorService.recordSearch(userId, "job", "job", keyword);
             }
             result.put("code", 0);
             result.put("data", jobs);
@@ -77,10 +87,12 @@ public class JobPostingController {
     }
 
     @GetMapping("/search")
-    public Map<String, Object> searchJobs(@RequestParam String keyword) {
+    public Map<String, Object> searchJobs(@RequestParam String keyword,
+                                          @RequestParam(required = false) Long userId) {
         Map<String, Object> result = new HashMap<>();
         try {
             List<JobPosting> jobs = jobPostingService.searchJobs(keyword);
+            userBehaviorService.recordSearch(userId, "job", "job", keyword);
             result.put("code", 0);
             result.put("data", jobs);
         } catch (Exception e) {
@@ -91,10 +103,12 @@ public class JobPostingController {
     }
 
     @GetMapping("/{id}")
-    public Map<String, Object> getJobById(@PathVariable Long id) {
+    public Map<String, Object> getJobById(@PathVariable Long id,
+                                          @RequestParam(required = false) Long userId) {
         Map<String, Object> result = new HashMap<>();
         try {
             JobPosting job = jobPostingService.getJobById(id);
+            userBehaviorService.recordView(userId, "job", "job", job.getId(), job.getTitle());
             result.put("code", 0);
             result.put("data", job);
         } catch (Exception e) {

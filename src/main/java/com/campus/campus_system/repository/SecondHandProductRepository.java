@@ -2,12 +2,13 @@ package com.campus.campus_system.repository;
 
 import com.campus.campus_system.entity.SecondHandProduct;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
-public interface SecondHandProductRepository extends JpaRepository<SecondHandProduct, Long> {
+public interface SecondHandProductRepository extends JpaRepository<SecondHandProduct, Long>, JpaSpecificationExecutor<SecondHandProduct> {
     List<SecondHandProduct> findByStatus(String status);
 
     List<SecondHandProduct> findByCategoryAndStatus(String category, String status);

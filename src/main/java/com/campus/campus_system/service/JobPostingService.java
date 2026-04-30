@@ -3,9 +3,13 @@ package com.campus.campus_system.service;
 import com.campus.campus_system.entity.JobPosting;
 import com.campus.campus_system.repository.JobPostingRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -13,49 +17,100 @@ public class JobPostingService {
     @Autowired
     private JobPostingRepository jobPostingRepository;
 
-    // ·¢²¼ÇóÖ°ĞÅÏ¢
+    // å‘å¸ƒæ±‚èŒä¿¡æ¯
     @Transactional
     public JobPosting publishJob(JobPosting jobPosting) {
         return jobPostingRepository.save(jobPosting);
     }
 
-    // »ñÈ¡ËùÓĞÓĞĞ§Ö°Î»
+    // è·å–æ‰€æœ‰æœ‰æ•ˆèŒä½
     public List<JobPosting> getAllActiveJobs() {
         return jobPostingRepository.findByStatus("active");
     }
 
-    // ¸ù¾İ¹¤×÷ÀàĞÍ»ñÈ¡Ö°Î»
+    // æ ¹æ®å·¥ä½œç±»å‹è·å–èŒä½
     public List<JobPosting> getJobsByType(String jobType) {
         return jobPostingRepository.findByJobTypeAndStatus(jobType, "active");
     }
 
-    // ËÑË÷Ö°Î»
-    public List<JobPosting> searchJobs(String keyword) {
-        return jobPostingRepository.search(keyword);
+    public List<JobPosting> queryJobs(String keyword, String location, String jobType, BigDecimal minSalary,
+                                      BigDecimal maxSalary, String sort) {
+        Specification<JobPosting> specification = (root, query, criteriaBuilder) -> {
+            List<jakarta.persistence.criteria.Predicate> predicates = new ArrayList<>();
+            predicates.add(criteriaBuilder.equal(root.get("status"), "active"));
+
+            if (keyword != null && !keyword.isBlank()) {
+                String pattern = "%" + keyword.trim() + "%";
+                predicates.add(criteriaBuilder.or(
+                        criteriaBuilder.like(root.get("title"), pattern),
+                        criteriaBuilder.like(root.get("description"), pattern),
+                        criteriaBuilder.like(root.get("company"), pattern)
+                ));
+            }
+
+            if (location != null && !location.isBlank()) {
+                String pattern = "%" + location.trim() + "%";
+                predicates.add(criteriaBuilder.like(root.get("location"), pattern));
+            }
+
+            if (jobType != null && !jobType.isBlank()) {
+                predicates.add(criteriaBuilder.equal(root.get("jobType"), jobType.trim()));
+            }
+
+            if (minSalary != null) {
+                predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("salary"), minSalary));
+            }
+
+            if (maxSalary != null) {
+                predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("salary"), maxSalary));
+            }
+
+            return criteriaBuilder.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
+        };
+
+        return jobPostingRepository.findAll(specification, resolveJobSort(sort));
     }
 
-    // »ñÈ¡Ö°Î»ÏêÇé
+    // æœç´¢èŒä½
+    public List<JobPosting> searchJobs(String keyword) {
+        return queryJobs(keyword, null, null, null, null, "latest");
+    }
+
+    // è·å–èŒä½è¯¦æƒ…
     public JobPosting getJobById(Long id) {
         JobPosting job = jobPostingRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Ö°Î»²»´æÔÚ"));
-        // Ôö¼Óä¯ÀÀ´ÎÊı
+                .orElseThrow(() -> new RuntimeException("èŒä½ä¸å­˜åœ¨"));
+        // å¢åŠ æµè§ˆæ¬¡æ•°
         job.setViewCount(job.getViewCount() + 1);
         jobPostingRepository.save(job);
         return job;
     }
 
-    // »ñÈ¡ÓÃ»§·¢²¼µÄÖ°Î»
+    // è·å–ç”¨æˆ·å‘å¸ƒçš„èŒä½
     public List<JobPosting> getJobsByPublisher(Long publisherId) {
         return jobPostingRepository.findByPublisherId(publisherId);
     }
 
-    // ¸üĞÂÖ°Î»×´Ì¬
+    // æ›´æ–°èŒä½çŠ¶æ€
     @Transactional
     public JobPosting updateJobStatus(Long id, String status) {
         JobPosting job = jobPostingRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Ö°Î»²»´æÔÚ"));
+                .orElseThrow(() -> new RuntimeException("èŒä½ä¸å­˜åœ¨"));
         job.setStatus(status);
         return jobPostingRepository.save(job);
+    }
+
+    private Sort resolveJobSort(String sort) {
+        if ("salaryAsc".equals(sort)) {
+            return Sort.by(Sort.Direction.ASC, "salary").and(Sort.by(Sort.Direction.DESC, "id"));
+        }
+        if ("salaryDesc".equals(sort)) {
+            return Sort.by(Sort.Direction.DESC, "salary").and(Sort.by(Sort.Direction.DESC, "id"));
+        }
+        if ("viewsDesc".equals(sort)) {
+            return Sort.by(Sort.Direction.DESC, "viewCount").and(Sort.by(Sort.Direction.DESC, "id"));
+        }
+        return Sort.by(Sort.Direction.DESC, "id");
     }
 }
 

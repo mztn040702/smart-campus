@@ -2,6 +2,7 @@ package com.campus.campus_system.controller;
 
 import com.campus.campus_system.entity.HelpRequest;
 import com.campus.campus_system.service.HelpRequestService;
+import com.campus.campus_system.service.UserBehaviorService;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,9 +21,12 @@ import java.util.Map;
 @CrossOrigin(origins = "*")
 public class HelpRequestController {
     private final HelpRequestService helpRequestService;
+    private final UserBehaviorService userBehaviorService;
 
-    public HelpRequestController(HelpRequestService helpRequestService) {
+    public HelpRequestController(HelpRequestService helpRequestService,
+                                 UserBehaviorService userBehaviorService) {
         this.helpRequestService = helpRequestService;
+        this.userBehaviorService = userBehaviorService;
     }
 
     @PostMapping("/publish")
@@ -52,14 +56,18 @@ public class HelpRequestController {
     }
 
     @GetMapping("/list")
-    public Map<String, Object> getAllRequests(@RequestParam(required = false) String category) {
+    public Map<String, Object> getAllRequests(@RequestParam(required = false) String keyword,
+                                              @RequestParam(required = false) Long userId,
+                                              @RequestParam(required = false) String category,
+                                              @RequestParam(required = false) String urgency,
+                                              @RequestParam(required = false, defaultValue = "latest") String sort) {
         Map<String, Object> result = new HashMap<>();
         try {
-            List<HelpRequest> requests;
-            if (category != null && !category.isEmpty()) {
-                requests = helpRequestService.getRequestsByCategory(category);
-            } else {
-                requests = helpRequestService.getAllPendingRequests();
+            List<HelpRequest> requests = helpRequestService.queryRequests(
+                    keyword, category, urgency, sort
+            );
+            if (keyword != null && !keyword.isBlank()) {
+                userBehaviorService.recordSearch(userId, "help", "help", keyword);
             }
             result.put("code", 0);
             result.put("data", requests);
@@ -71,10 +79,12 @@ public class HelpRequestController {
     }
 
     @GetMapping("/search")
-    public Map<String, Object> searchRequests(@RequestParam String keyword) {
+    public Map<String, Object> searchRequests(@RequestParam String keyword,
+                                              @RequestParam(required = false) Long userId) {
         Map<String, Object> result = new HashMap<>();
         try {
             List<HelpRequest> requests = helpRequestService.searchRequests(keyword);
+            userBehaviorService.recordSearch(userId, "help", "help", keyword);
             result.put("code", 0);
             result.put("data", requests);
         } catch (Exception e) {
@@ -85,10 +95,12 @@ public class HelpRequestController {
     }
 
     @GetMapping("/{id}")
-    public Map<String, Object> getRequestById(@PathVariable Long id) {
+    public Map<String, Object> getRequestById(@PathVariable Long id,
+                                              @RequestParam(required = false) Long userId) {
         Map<String, Object> result = new HashMap<>();
         try {
             HelpRequest request = helpRequestService.getRequestById(id);
+            userBehaviorService.recordView(userId, "help", "help", request.getId(), request.getTitle());
             result.put("code", 0);
             result.put("data", request);
         } catch (Exception e) {

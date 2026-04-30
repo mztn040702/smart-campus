@@ -13,26 +13,31 @@
             <h3>{{ link.title }}</h3>
             <p>{{ link.description }}</p>
           </div>
-          <el-button :type="link.type" plain>Open</el-button>
+          <el-button :type="link.type" plain>进入</el-button>
         </div>
       </el-card>
     </div>
 
-    <h2>Smart Recommendations</h2>
+    <div class="recommendation-header">
+      <h2>智能推荐</h2>
+      <p class="recommendation-tip">当前推荐基于用户行为、内容热度和语义相似度综合生成。</p>
+    </div>
     <el-tabs v-model="activeTab" @tab-change="handleTabChange">
-      <el-tab-pane label="Recommended Products" name="products">
+      <el-tab-pane label="推荐商品" name="products">
         <div class="content-grid">
           <el-card v-for="product in recommendedProducts" :key="product.id" class="content-card" @click="viewProduct(product)">
             <div class="card-content">
               <h3>{{ product.title }}</h3>
-              <p class="price">?{{ product.price }}</p>
+              <p class="price">￥{{ product.price }}</p>
               <p class="description">{{ product.description }}</p>
               <el-tag size="small">{{ product.category }}</el-tag>
+              <p v-if="showRecommendationScores(product)" class="score-meta">推荐分数：{{ formatScore(product.finalScore) }}</p>
+              <p v-if="showRecommendationScores(product)" class="score-meta">语义相似度：{{ formatScore(product.semanticScore) }}</p>
             </div>
           </el-card>
         </div>
       </el-tab-pane>
-      <el-tab-pane label="Recommended Jobs" name="jobs">
+      <el-tab-pane label="推荐招聘" name="jobs">
         <div class="content-grid">
           <el-card v-for="job in recommendedJobs" :key="job.id" class="content-card" @click="viewJob(job)">
             <div class="card-content">
@@ -40,17 +45,21 @@
               <p class="company">{{ job.company }}</p>
               <p class="location">{{ job.location }}</p>
               <el-tag size="small" type="success">{{ job.jobType }}</el-tag>
+              <p v-if="showRecommendationScores(job)" class="score-meta">推荐分数：{{ formatScore(job.finalScore) }}</p>
+              <p v-if="showRecommendationScores(job)" class="score-meta">语义相似度：{{ formatScore(job.semanticScore) }}</p>
             </div>
           </el-card>
         </div>
       </el-tab-pane>
-      <el-tab-pane label="Recommended Help" name="helps">
+      <el-tab-pane label="推荐互助" name="helps">
         <div class="content-grid">
           <el-card v-for="help in recommendedHelps" :key="help.id" class="content-card" @click="viewHelp(help)">
             <div class="card-content">
               <h3>{{ help.title }}</h3>
               <p class="description">{{ help.description }}</p>
               <el-tag size="small" :type="getUrgencyType(help.urgency)">{{ help.urgency }}</el-tag>
+              <p v-if="showRecommendationScores(help)" class="score-meta">推荐分数：{{ formatScore(help.finalScore) }}</p>
+              <p v-if="showRecommendationScores(help)" class="score-meta">语义相似度：{{ formatScore(help.semanticScore) }}</p>
             </div>
           </el-card>
         </div>
@@ -70,15 +79,16 @@ export default {
     const router = useRouter()
     const activeTab = ref('products')
     const quickLinks = [
-      { title: 'Product Page', description: 'Browse and publish second-hand goods.', path: '/product', type: 'danger' },
-      { title: 'Job Page', description: 'View full-time, part-time, and internship posts.', path: '/job', type: 'primary' },
-      { title: 'Help Page', description: 'Publish requests and respond to classmates.', path: '/help', type: 'success' },
-      { title: 'Chat Page', description: 'Contact sellers, recruiters, and helpers.', path: '/chat', type: 'warning' }
+      { title: '商品广场', description: '浏览和发布二手商品。', path: '/product', type: 'danger' },
+      { title: '招聘信息', description: '查看全职、兼职和实习岗位。', path: '/job', type: 'primary' },
+      { title: '校园互助', description: '发布求助信息并响应同学需求。', path: '/help', type: 'success' },
+      { title: '即时聊天', description: '联系卖家、招聘方和互助同学。', path: '/chat', type: 'warning' }
     ]
     const recommendedProducts = ref([])
     const recommendedJobs = ref([])
     const recommendedHelps = ref([])
     const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
+    const isDevelopment = import.meta.env.DEV
 
     const loadRecommendations = async () => {
       if (!currentUser.id) return
@@ -92,7 +102,7 @@ export default {
         if (jobsRes.code === 0) recommendedJobs.value = jobsRes.data
         if (helpsRes.code === 0) recommendedHelps.value = helpsRes.data
       } catch (error) {
-        console.error('鍔犺浇鎺ㄨ崘澶辫触:', error)
+        console.error('加载推荐数据失败：', error)
       }
     }
 
@@ -127,6 +137,14 @@ export default {
       router.push(path)
     }
 
+    const showRecommendationScores = (item) => {
+      return isDevelopment && item && (typeof item.finalScore === 'number' || typeof item.semanticScore === 'number')
+    }
+
+    const formatScore = (value) => {
+      return typeof value === 'number' ? value.toFixed(2) : '--'
+    }
+
     onMounted(() => {
       loadRecommendations()
     })
@@ -142,7 +160,9 @@ export default {
       viewJob,
       viewHelp,
       getUrgencyType,
-      goTo
+      goTo,
+      showRecommendationScores,
+      formatScore
     }
   }
 }
@@ -151,6 +171,16 @@ export default {
 <style scoped>
 .home-container {
   padding: 20px;
+}
+
+.recommendation-header {
+  margin-bottom: 12px;
+}
+
+.recommendation-tip {
+  margin: 6px 0 0;
+  color: #666;
+  font-size: 14px;
 }
 
 .quick-nav {
@@ -232,5 +262,11 @@ export default {
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
+}
+
+.score-meta {
+  color: #909399;
+  font-size: 12px;
+  margin-top: 6px;
 }
 </style>

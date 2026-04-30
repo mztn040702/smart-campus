@@ -3,10 +3,10 @@
     <el-container v-if="showShell" class="app-shell">
       <el-header>
         <div class="header-content">
-          <h2>Smart Campus</h2>
+          <h2>智慧校园</h2>
           <div class="user-info">
-            <span>Welcome, {{ displayName }}</span>
-            <el-button type="danger" size="small" @click="logout">Logout</el-button>
+            <span>欢迎，{{ displayName }}</span>
+            <el-button type="danger" size="small" @click="logout">退出登录</el-button>
           </div>
         </div>
       </el-header>
@@ -19,31 +19,31 @@
           >
             <el-menu-item index="/home">
               <el-icon><House /></el-icon>
-              <span>Home</span>
+              <span>首页</span>
             </el-menu-item>
             <el-menu-item index="/product">
               <el-icon><ShoppingBag /></el-icon>
-              <span>Product</span>
+              <span>商品</span>
             </el-menu-item>
             <el-menu-item index="/job">
               <el-icon><Briefcase /></el-icon>
-              <span>Job</span>
+              <span>招聘</span>
             </el-menu-item>
             <el-menu-item index="/help">
               <el-icon><HelpFilled /></el-icon>
-              <span>Help</span>
+              <span>互助</span>
             </el-menu-item>
             <el-menu-item index="/chat">
               <el-icon><ChatLineRound /></el-icon>
-              <span>Chat</span>
+              <span>聊天</span>
             </el-menu-item>
             <el-menu-item index="/profile">
               <el-icon><User /></el-icon>
-              <span>Profile</span>
+              <span>个人中心</span>
             </el-menu-item>
             <el-menu-item v-if="isAdmin" index="/admin">
               <el-icon><DataAnalysis /></el-icon>
-              <span>Admin</span>
+              <span>管理后台</span>
             </el-menu-item>
           </el-menu>
         </el-aside>
