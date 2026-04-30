@@ -2,8 +2,15 @@ package com.campus.campus_system.controller;
 
 import com.campus.campus_system.entity.HelpRequest;
 import com.campus.campus_system.service.HelpRequestService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import com.campus.campus_system.service.UserBehaviorService;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.HashMap;
 import java.util.List;
@@ -13,10 +20,15 @@ import java.util.Map;
 @RequestMapping("/api/help")
 @CrossOrigin(origins = "*")
 public class HelpRequestController {
-    @Autowired
-    private HelpRequestService helpRequestService;
+    private final HelpRequestService helpRequestService;
+    private final UserBehaviorService userBehaviorService;
 
-    // 发布求助
+    public HelpRequestController(HelpRequestService helpRequestService,
+                                 UserBehaviorService userBehaviorService) {
+        this.helpRequestService = helpRequestService;
+        this.userBehaviorService = userBehaviorService;
+    }
+
     @PostMapping("/publish")
     public Map<String, Object> publishHelp(@RequestBody Map<String, Object> params) {
         Map<String, Object> result = new HashMap<>();
@@ -32,7 +44,7 @@ public class HelpRequestController {
             if (params.containsKey("urgency")) {
                 helpRequest.setUrgency(params.get("urgency").toString());
             }
-            
+
             HelpRequest saved = helpRequestService.publishHelpRequest(helpRequest);
             result.put("code", 0);
             result.put("data", saved);
@@ -43,16 +55,19 @@ public class HelpRequestController {
         return result;
     }
 
-    // 获取所有待帮助的请求
     @GetMapping("/list")
-    public Map<String, Object> getAllRequests(@RequestParam(required = false) String category) {
+    public Map<String, Object> getAllRequests(@RequestParam(required = false) String keyword,
+                                              @RequestParam(required = false) Long userId,
+                                              @RequestParam(required = false) String category,
+                                              @RequestParam(required = false) String urgency,
+                                              @RequestParam(required = false, defaultValue = "latest") String sort) {
         Map<String, Object> result = new HashMap<>();
         try {
-            List<HelpRequest> requests;
-            if (category != null && !category.isEmpty()) {
-                requests = helpRequestService.getRequestsByCategory(category);
-            } else {
-                requests = helpRequestService.getAllPendingRequests();
+            List<HelpRequest> requests = helpRequestService.queryRequests(
+                    keyword, category, urgency, sort
+            );
+            if (keyword != null && !keyword.isBlank()) {
+                userBehaviorService.recordSearch(userId, "help", "help", keyword);
             }
             result.put("code", 0);
             result.put("data", requests);
@@ -63,12 +78,13 @@ public class HelpRequestController {
         return result;
     }
 
-    // 搜索求助
     @GetMapping("/search")
-    public Map<String, Object> searchRequests(@RequestParam String keyword) {
+    public Map<String, Object> searchRequests(@RequestParam String keyword,
+                                              @RequestParam(required = false) Long userId) {
         Map<String, Object> result = new HashMap<>();
         try {
             List<HelpRequest> requests = helpRequestService.searchRequests(keyword);
+            userBehaviorService.recordSearch(userId, "help", "help", keyword);
             result.put("code", 0);
             result.put("data", requests);
         } catch (Exception e) {
@@ -78,12 +94,13 @@ public class HelpRequestController {
         return result;
     }
 
-    // 获取求助详情
     @GetMapping("/{id}")
-    public Map<String, Object> getRequestById(@PathVariable Long id) {
+    public Map<String, Object> getRequestById(@PathVariable Long id,
+                                              @RequestParam(required = false) Long userId) {
         Map<String, Object> result = new HashMap<>();
         try {
             HelpRequest request = helpRequestService.getRequestById(id);
+            userBehaviorService.recordView(userId, "help", "help", request.getId(), request.getTitle());
             result.put("code", 0);
             result.put("data", request);
         } catch (Exception e) {
@@ -93,7 +110,6 @@ public class HelpRequestController {
         return result;
     }
 
-    // 接受帮助
     @PostMapping("/accept")
     public Map<String, Object> acceptHelp(@RequestBody Map<String, Object> params) {
         Map<String, Object> result = new HashMap<>();
@@ -110,7 +126,6 @@ public class HelpRequestController {
         return result;
     }
 
-    // 完成帮助
     @PostMapping("/complete/{id}")
     public Map<String, Object> completeHelp(@PathVariable Long id) {
         Map<String, Object> result = new HashMap<>();
@@ -125,4 +140,3 @@ public class HelpRequestController {
         return result;
     }
 }
-

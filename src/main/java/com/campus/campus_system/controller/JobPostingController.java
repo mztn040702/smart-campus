@@ -2,8 +2,15 @@ package com.campus.campus_system.controller;
 
 import com.campus.campus_system.entity.JobPosting;
 import com.campus.campus_system.service.JobPostingService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import com.campus.campus_system.service.UserBehaviorService;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
@@ -14,10 +21,15 @@ import java.util.Map;
 @RequestMapping("/api/job")
 @CrossOrigin(origins = "*")
 public class JobPostingController {
-    @Autowired
-    private JobPostingService jobPostingService;
+    private final JobPostingService jobPostingService;
+    private final UserBehaviorService userBehaviorService;
 
-    // 发布职位
+    public JobPostingController(JobPostingService jobPostingService,
+                                UserBehaviorService userBehaviorService) {
+        this.jobPostingService = jobPostingService;
+        this.userBehaviorService = userBehaviorService;
+    }
+
     @PostMapping("/publish")
     public Map<String, Object> publishJob(@RequestBody Map<String, Object> params) {
         Map<String, Object> result = new HashMap<>();
@@ -38,7 +50,7 @@ public class JobPostingController {
             if (params.containsKey("contact")) {
                 job.setContact(params.get("contact").toString());
             }
-            
+
             JobPosting saved = jobPostingService.publishJob(job);
             result.put("code", 0);
             result.put("data", saved);
@@ -49,16 +61,21 @@ public class JobPostingController {
         return result;
     }
 
-    // 获取所有有效职位
     @GetMapping("/list")
-    public Map<String, Object> getAllJobs(@RequestParam(required = false) String jobType) {
+    public Map<String, Object> getAllJobs(@RequestParam(required = false) String keyword,
+                                          @RequestParam(required = false) Long userId,
+                                          @RequestParam(required = false) String location,
+                                          @RequestParam(required = false) String jobType,
+                                          @RequestParam(required = false) BigDecimal minSalary,
+                                          @RequestParam(required = false) BigDecimal maxSalary,
+                                          @RequestParam(required = false, defaultValue = "latest") String sort) {
         Map<String, Object> result = new HashMap<>();
         try {
-            List<JobPosting> jobs;
-            if (jobType != null && !jobType.isEmpty()) {
-                jobs = jobPostingService.getJobsByType(jobType);
-            } else {
-                jobs = jobPostingService.getAllActiveJobs();
+            List<JobPosting> jobs = jobPostingService.queryJobs(
+                    keyword, location, jobType, minSalary, maxSalary, sort
+            );
+            if (keyword != null && !keyword.isBlank()) {
+                userBehaviorService.recordSearch(userId, "job", "job", keyword);
             }
             result.put("code", 0);
             result.put("data", jobs);
@@ -69,12 +86,13 @@ public class JobPostingController {
         return result;
     }
 
-    // 搜索职位
     @GetMapping("/search")
-    public Map<String, Object> searchJobs(@RequestParam String keyword) {
+    public Map<String, Object> searchJobs(@RequestParam String keyword,
+                                          @RequestParam(required = false) Long userId) {
         Map<String, Object> result = new HashMap<>();
         try {
             List<JobPosting> jobs = jobPostingService.searchJobs(keyword);
+            userBehaviorService.recordSearch(userId, "job", "job", keyword);
             result.put("code", 0);
             result.put("data", jobs);
         } catch (Exception e) {
@@ -84,12 +102,13 @@ public class JobPostingController {
         return result;
     }
 
-    // 获取职位详情
     @GetMapping("/{id}")
-    public Map<String, Object> getJobById(@PathVariable Long id) {
+    public Map<String, Object> getJobById(@PathVariable Long id,
+                                          @RequestParam(required = false) Long userId) {
         Map<String, Object> result = new HashMap<>();
         try {
             JobPosting job = jobPostingService.getJobById(id);
+            userBehaviorService.recordView(userId, "job", "job", job.getId(), job.getTitle());
             result.put("code", 0);
             result.put("data", job);
         } catch (Exception e) {
@@ -99,7 +118,6 @@ public class JobPostingController {
         return result;
     }
 
-    // 获取用户发布的职位
     @GetMapping("/my/{publisherId}")
     public Map<String, Object> getMyJobs(@PathVariable Long publisherId) {
         Map<String, Object> result = new HashMap<>();
@@ -114,4 +132,3 @@ public class JobPostingController {
         return result;
     }
 }
-

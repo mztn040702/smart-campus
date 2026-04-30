@@ -1,11 +1,16 @@
 package com.campus.campus_system.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
+
 import java.time.LocalDateTime;
 
-/**
- * 互助请求实体
- */
 @Entity
 @Table(name = "help_request")
 public class HelpRequest {
@@ -14,31 +19,31 @@ public class HelpRequest {
     private Long id;
 
     @Column(name = "requester_id", nullable = false)
-    private Long requesterId;  // 求助者ID
+    private Long requesterId;
 
     @Column(nullable = false, length = 200)
-    private String title;  // 求助标题
+    private String title;
 
     @Column(columnDefinition = "TEXT")
-    private String description;  // 求助描述
+    private String description;
 
     @Column(length = 50)
-    private String category;  // 分类：学习、生活、技术、其他
+    private String category;
 
     @Column(length = 100)
-    private String location;  // 地点
+    private String location;
 
     @Column(length = 20)
-    private String urgency;  // 紧急程度：low, medium, high
+    private String urgency;
 
     @Column(length = 20)
-    private String status = "pending";  // 状态：pending(待帮助), helping(帮助中), completed(已完成)
+    private String status = "pending";
 
     @Column(name = "helper_id")
-    private Long helperId;  // 帮助者ID
+    private Long helperId;
 
     @Column(name = "view_count")
-    private Integer viewCount = 0;  // 浏览次数
+    private Integer viewCount = 0;
 
     @Column(name = "create_time")
     private LocalDateTime createTime;
@@ -57,7 +62,6 @@ public class HelpRequest {
         updateTime = LocalDateTime.now();
     }
 
-    // Getter and Setter
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public Long getRequesterId() { return requesterId; }
@@ -83,4 +87,3 @@ public class HelpRequest {
     public LocalDateTime getUpdateTime() { return updateTime; }
     public void setUpdateTime(LocalDateTime updateTime) { this.updateTime = updateTime; }
 }
-

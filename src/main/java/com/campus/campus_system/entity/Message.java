@@ -1,11 +1,15 @@
 package com.campus.campus_system.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
+
 import java.time.LocalDateTime;
 
-/**
- * 消息实体 - 用于点对点聊天
- */
 @Entity
 @Table(name = "message")
 public class Message {
@@ -14,19 +18,19 @@ public class Message {
     private Long id;
 
     @Column(name = "sender_id", nullable = false)
-    private Long senderId;  // 发送者ID
+    private Long senderId;
 
     @Column(name = "receiver_id", nullable = false)
-    private Long receiverId;  // 接收者ID
+    private Long receiverId;
 
     @Column(columnDefinition = "TEXT")
-    private String content;  // 消息内容
+    private String content;
 
     @Column(name = "message_type", length = 20)
-    private String messageType = "text";  // 消息类型：text, image, file
+    private String messageType = "text";
 
     @Column(name = "is_read")
-    private Boolean isRead = false;  // 是否已读
+    private Boolean isRead = false;
 
     @Column(name = "create_time")
     private LocalDateTime createTime;
@@ -36,7 +40,6 @@ public class Message {
         createTime = LocalDateTime.now();
     }
 
-    // Getter and Setter
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public Long getSenderId() { return senderId; }
@@ -52,4 +55,3 @@ public class Message {
     public LocalDateTime getCreateTime() { return createTime; }
     public void setCreateTime(LocalDateTime createTime) { this.createTime = createTime; }
 }
-

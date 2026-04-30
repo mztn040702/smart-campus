@@ -1,12 +1,12 @@
 <template>
   <div id="app">
-    <el-container v-if="isLoggedIn">
+    <el-container v-if="showShell" class="app-shell">
       <el-header>
         <div class="header-content">
-          <h2>智慧校园系统</h2>
+          <h2>智慧校园</h2>
           <div class="user-info">
-            <span>欢迎，{{ currentUser.realName || currentUser.username }}</span>
-            <el-button type="danger" size="small" @click="logout">退出</el-button>
+            <span>欢迎，{{ displayName }}</span>
+            <el-button type="danger" size="small" @click="logout">退出登录</el-button>
           </div>
         </div>
       </el-header>
@@ -19,23 +19,31 @@
           >
             <el-menu-item index="/home">
               <el-icon><House /></el-icon>
-              <span>首页推荐</span>
-            </el-menu-item>
-            <el-menu-item index="/chat">
-              <el-icon><ChatLineRound /></el-icon>
-              <span>消息</span>
+              <span>首页</span>
             </el-menu-item>
             <el-menu-item index="/product">
               <el-icon><ShoppingBag /></el-icon>
-              <span>二手交易</span>
+              <span>商品</span>
             </el-menu-item>
             <el-menu-item index="/job">
               <el-icon><Briefcase /></el-icon>
-              <span>求职招聘</span>
+              <span>招聘</span>
             </el-menu-item>
             <el-menu-item index="/help">
               <el-icon><HelpFilled /></el-icon>
               <span>互助</span>
+            </el-menu-item>
+            <el-menu-item index="/chat">
+              <el-icon><ChatLineRound /></el-icon>
+              <span>聊天</span>
+            </el-menu-item>
+            <el-menu-item index="/profile">
+              <el-icon><User /></el-icon>
+              <span>个人中心</span>
+            </el-menu-item>
+            <el-menu-item v-if="isAdmin" index="/admin">
+              <el-icon><DataAnalysis /></el-icon>
+              <span>管理后台</span>
             </el-menu-item>
           </el-menu>
         </el-aside>
@@ -49,34 +57,53 @@
 </template>
 
 <script>
-import { ref, computed, onMounted } from 'vue'
+import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import axios from './utils/axios'
+import { PUBLIC_PATHS } from './router/access.mjs'
+import { clearSession, syncSessionState, useSessionState } from './utils/auth.mjs'
+
+const SHELL_MENU_PATHS = ['/home', '/product', '/job', '/help', '/chat', '/profile', '/admin']
 
 export default {
   name: 'App',
   setup() {
     const router = useRouter()
     const route = useRoute()
-    const currentUser = ref(JSON.parse(localStorage.getItem('user') || '{}'))
-    const isLoggedIn = computed(() => currentUser.value.id && route.path !== '/login' && route.path !== '/register')
-    const activeMenu = computed(() => route.path)
+    const session = useSessionState()
+    const isAuthPage = computed(() => PUBLIC_PATHS.includes(route.path))
+    const showShell = computed(() => Boolean(session.user?.id && session.token) && !isAuthPage.value)
+    const isAdmin = computed(() => String(session.user?.role || '').toUpperCase() === 'ADMIN')
+    const activeMenu = computed(() => {
+      if (SHELL_MENU_PATHS.includes(route.path) && (route.path !== '/admin' || isAdmin.value)) {
+        return route.path
+      }
+      return '/home'
+    })
+    const displayName = computed(() => session.user?.nickname || session.user?.realName || session.user?.username || '')
 
     const logout = () => {
-      localStorage.removeItem('user')
+      clearSession()
       router.push('/login')
     }
 
+    const handleStorageChange = () => {
+      syncSessionState()
+    }
+
     onMounted(() => {
-      if (!isLoggedIn.value && route.path !== '/login' && route.path !== '/register') {
-        router.push('/login')
-      }
+      syncSessionState()
+      window.addEventListener('storage', handleStorageChange)
+    })
+
+    onBeforeUnmount(() => {
+      window.removeEventListener('storage', handleStorageChange)
     })
 
     return {
-      currentUser,
-      isLoggedIn,
+      showShell,
+      isAdmin,
       activeMenu,
+      displayName,
       logout
     }
   }
@@ -93,6 +120,10 @@ export default {
 #app {
   font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Arial, sans-serif;
   height: 100vh;
+}
+
+.app-shell {
+  min-height: 100vh;
 }
 
 .el-header {
@@ -130,4 +161,3 @@ export default {
   padding: 20px;
 }
 </style>
-

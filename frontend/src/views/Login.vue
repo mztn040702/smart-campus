@@ -22,14 +22,16 @@
 
 <script>
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import axios from '../utils/axios'
+import { saveSession } from '../utils/auth.mjs'
 import { ElMessage } from 'element-plus'
 
 export default {
   name: 'Login',
   setup() {
     const router = useRouter()
+    const route = useRoute()
     const form = ref({
       username: '',
       password: ''
@@ -45,9 +47,9 @@ export default {
       try {
         const res = await axios.post('/user/login', form.value)
         if (res.code === 0) {
-          localStorage.setItem('user', JSON.stringify(res.data))
+          saveSession(res.data, res.token)
           ElMessage.success('登录成功')
-          router.push('/home')
+          router.push(route.query.redirect || '/home')
         } else {
           ElMessage.error(res.msg || '登录失败')
         }
@@ -87,4 +89,3 @@ export default {
   color: #333;
 }
 </style>
-

@@ -1,25 +1,37 @@
 <template>
   <div class="job-container">
     <div class="header-actions">
-      <el-button type="primary" @click="showPublishDialog = true">发布职位</el-button>
-      <el-input
-        v-model="searchKeyword"
-        placeholder="搜索职位..."
-        style="width: 300px; margin-left: 20px;"
-        @keyup.enter="handleSearch"
-      >
-        <template #append>
-          <el-button @click="handleSearch">搜索</el-button>
-        </template>
-      </el-input>
+      <el-button type="primary" @click="showPublishDialog = true">发布招聘</el-button>
     </div>
 
-    <el-tabs v-model="activeJobType" @tab-change="handleJobTypeChange">
-      <el-tab-pane label="全部" name=""></el-tab-pane>
-      <el-tab-pane label="全职" name="全职"></el-tab-pane>
-      <el-tab-pane label="兼职" name="兼职"></el-tab-pane>
-      <el-tab-pane label="实习" name="实习"></el-tab-pane>
-    </el-tabs>
+    <el-card class="filter-panel" shadow="never">
+      <div class="filter-grid">
+        <el-input
+          v-model="filters.keyword"
+          placeholder="搜索岗位关键词"
+          clearable
+          @keyup.enter="handleSearch"
+        />
+        <el-input v-model="filters.location" placeholder="地点筛选" clearable @keyup.enter="handleSearch" />
+        <el-select v-model="filters.jobType" placeholder="全部岗位类型" clearable>
+          <el-option label="全职" value="全职"></el-option>
+          <el-option label="兼职" value="兼职"></el-option>
+          <el-option label="实习" value="实习"></el-option>
+        </el-select>
+        <el-input-number v-model="filters.minSalary" :min="0" :precision="0" :controls="false" placeholder="最低薪资" />
+        <el-input-number v-model="filters.maxSalary" :min="0" :precision="0" :controls="false" placeholder="最高薪资" />
+        <el-select v-model="filters.sort" placeholder="排序方式">
+          <el-option label="最新发布" value="latest"></el-option>
+          <el-option label="薪资从低到高" value="salaryAsc"></el-option>
+          <el-option label="薪资从高到低" value="salaryDesc"></el-option>
+          <el-option label="浏览量优先" value="viewsDesc"></el-option>
+        </el-select>
+        <div class="filter-actions">
+          <el-button type="primary" @click="handleSearch">搜索</el-button>
+          <el-button @click="resetFilters">重置</el-button>
+        </div>
+      </div>
+    </el-card>
 
     <div class="jobs-grid">
       <el-card
@@ -31,8 +43,8 @@
         <div class="job-info">
           <h3>{{ job.title }}</h3>
           <p class="company">{{ job.company }}</p>
-          <p class="location">? {{ job.location }}</p>
-          <p class="salary">? {{ job.salary ? '?' + job.salary : '面议' }}</p>
+          <p class="location">地点：{{ job.location }}</p>
+          <p class="salary">薪资：{{ job.salary ? '￥' + job.salary : '面议' }}</p>
           <el-tag size="small" type="success">{{ job.jobType }}</el-tag>
           <p class="description">{{ job.description }}</p>
           <p class="view-count">浏览 {{ job.viewCount }} 次</p>
@@ -40,11 +52,10 @@
       </el-card>
     </div>
 
-    <!-- 发布职位对话框 -->
-    <el-dialog v-model="showPublishDialog" title="发布职位" width="600px">
+    <el-dialog v-model="showPublishDialog" title="发布招聘" width="600px">
       <el-form :model="publishForm" label-width="100px">
-        <el-form-item label="职位标题" required>
-          <el-input v-model="publishForm.title" placeholder="请输入职位标题"></el-input>
+        <el-form-item label="岗位标题" required>
+          <el-input v-model="publishForm.title" placeholder="请输入岗位标题"></el-input>
         </el-form-item>
         <el-form-item label="公司名称" required>
           <el-input v-model="publishForm.company" placeholder="请输入公司名称"></el-input>
@@ -52,8 +63,8 @@
         <el-form-item label="工作地点" required>
           <el-input v-model="publishForm.location" placeholder="请输入工作地点"></el-input>
         </el-form-item>
-        <el-form-item label="工作类型" required>
-          <el-select v-model="publishForm.jobType" placeholder="请选择工作类型" style="width: 100%;">
+        <el-form-item label="岗位类型" required>
+          <el-select v-model="publishForm.jobType" placeholder="请选择岗位类型" style="width: 100%;">
             <el-option label="全职" value="全职"></el-option>
             <el-option label="兼职" value="兼职"></el-option>
             <el-option label="实习" value="实习"></el-option>
@@ -62,12 +73,12 @@
         <el-form-item label="薪资">
           <el-input-number v-model="publishForm.salary" :min="0" :precision="0" style="width: 100%;"></el-input-number>
         </el-form-item>
-        <el-form-item label="职位描述" required>
+        <el-form-item label="岗位描述" required>
           <el-input
             v-model="publishForm.description"
             type="textarea"
             :rows="4"
-            placeholder="请输入职位描述"
+            placeholder="请输入岗位描述"
           ></el-input>
         </el-form-item>
         <el-form-item label="任职要求">
@@ -88,15 +99,14 @@
       </template>
     </el-dialog>
 
-    <!-- 职位详情对话框 -->
-    <el-dialog v-model="showDetailDialog" title="职位详情" width="700px">
+    <el-dialog v-model="showDetailDialog" title="岗位详情" width="700px">
       <div v-if="selectedJob">
         <h2>{{ selectedJob.title }}</h2>
         <p class="detail-company">{{ selectedJob.company }}</p>
         <p><strong>工作地点：</strong>{{ selectedJob.location }}</p>
-        <p><strong>工作类型：</strong><el-tag type="success">{{ selectedJob.jobType }}</el-tag></p>
-        <p><strong>薪资：</strong>{{ selectedJob.salary ? '?' + selectedJob.salary : '面议' }}</p>
-        <p><strong>职位描述：</strong></p>
+        <p><strong>岗位类型：</strong><el-tag type="success">{{ selectedJob.jobType }}</el-tag></p>
+        <p><strong>薪资：</strong>{{ selectedJob.salary ? '￥' + selectedJob.salary : '面议' }}</p>
+        <p><strong>岗位描述：</strong></p>
         <p>{{ selectedJob.description }}</p>
         <p v-if="selectedJob.requirements"><strong>任职要求：</strong></p>
         <p v-if="selectedJob.requirements">{{ selectedJob.requirements }}</p>
@@ -120,12 +130,18 @@ export default {
     const router = useRouter()
     const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
     const jobs = ref([])
-    const activeJobType = ref('')
-    const searchKeyword = ref('')
     const showPublishDialog = ref(false)
     const showDetailDialog = ref(false)
     const selectedJob = ref(null)
     const publishing = ref(false)
+    const filters = ref({
+      keyword: '',
+      location: '',
+      jobType: '',
+      minSalary: null,
+      maxSalary: null,
+      sort: 'latest'
+    })
 
     const publishForm = ref({
       title: '',
@@ -138,31 +154,56 @@ export default {
       contact: ''
     })
 
+    const buildJobQueryParams = () => {
+      const params = {}
+      if (currentUser.id) {
+        params.userId = currentUser.id
+      }
+      if (filters.value.keyword) {
+        params.keyword = filters.value.keyword.trim()
+      }
+      if (filters.value.location) {
+        params.location = filters.value.location.trim()
+      }
+      if (filters.value.jobType) {
+        params.jobType = filters.value.jobType
+      }
+      if (filters.value.minSalary !== null && filters.value.minSalary !== undefined) {
+        params.minSalary = filters.value.minSalary
+      }
+      if (filters.value.maxSalary !== null && filters.value.maxSalary !== undefined) {
+        params.maxSalary = filters.value.maxSalary
+      }
+      if (filters.value.sort) {
+        params.sort = filters.value.sort
+      }
+      return params
+    }
+
     const loadJobs = async () => {
       try {
-        let res
-        if (searchKeyword.value) {
-          res = await axios.get('/job/search', { params: { keyword: searchKeyword.value } })
-        } else if (activeJobType.value) {
-          res = await axios.get('/job/list', { params: { jobType: activeJobType.value } })
-        } else {
-          res = await axios.get('/job/list')
-        }
+        const res = await axios.get('/job/list', { params: buildJobQueryParams() })
         if (res.code === 0) {
           jobs.value = res.data
         }
       } catch (error) {
-        console.error('加载职位失败:', error)
+        console.error('加载招聘信息失败：', error)
       }
     }
 
-    const handleJobTypeChange = () => {
-      searchKeyword.value = ''
+    const handleSearch = () => {
       loadJobs()
     }
 
-    const handleSearch = () => {
-      activeJobType.value = ''
+    const resetFilters = () => {
+      filters.value = {
+        keyword: '',
+        location: '',
+        jobType: '',
+        minSalary: null,
+        maxSalary: null,
+        sort: 'latest'
+      }
       loadJobs()
     }
 
@@ -180,6 +221,7 @@ export default {
         if (res.code === 0) {
           ElMessage.success('发布成功')
           showPublishDialog.value = false
+          const preferenceKeyword = publishForm.value.jobType
           publishForm.value = {
             title: '',
             company: '',
@@ -191,11 +233,10 @@ export default {
             contact: ''
           }
           loadJobs()
-          // 记录偏好
           await axios.post('/recommend/preference', {
             userId: currentUser.id,
             category: 'job',
-            keyword: publishForm.value.jobType
+            keyword: preferenceKeyword
           })
         } else {
           ElMessage.error(res.msg || '发布失败')
@@ -209,11 +250,14 @@ export default {
 
     const viewJobDetail = async (job) => {
       try {
-        const res = await axios.get(`/job/${job.id}`)
+        const res = await axios.get(`/job/${job.id}`, {
+          params: {
+            userId: currentUser.id
+          }
+        })
         if (res.code === 0) {
           selectedJob.value = res.data
           showDetailDialog.value = true
-          // 记录偏好
           await axios.post('/recommend/preference', {
             userId: currentUser.id,
             category: 'job',
@@ -221,7 +265,7 @@ export default {
           })
         }
       } catch (error) {
-        ElMessage.error('加载详情失败')
+        ElMessage.error('加载岗位详情失败')
       }
     }
 
@@ -237,15 +281,15 @@ export default {
 
     return {
       jobs,
-      activeJobType,
-      searchKeyword,
+      filters,
       showPublishDialog,
       showDetailDialog,
       selectedJob,
       publishing,
       publishForm,
-      handleJobTypeChange,
+      buildJobQueryParams,
       handleSearch,
+      resetFilters,
       handlePublish,
       viewJobDetail,
       contactPublisher
@@ -263,6 +307,23 @@ export default {
   display: flex;
   align-items: center;
   margin-bottom: 20px;
+  justify-content: space-between;
+}
+
+.filter-panel {
+  margin-bottom: 20px;
+}
+
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
 }
 
 .jobs-grid {
@@ -328,4 +389,3 @@ export default {
   margin: 15px 0;
 }
 </style>
-

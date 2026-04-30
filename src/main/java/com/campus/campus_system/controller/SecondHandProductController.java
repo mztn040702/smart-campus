@@ -1,9 +1,16 @@
 package com.campus.campus_system.controller;
 
 import com.campus.campus_system.entity.SecondHandProduct;
+import com.campus.campus_system.service.UserBehaviorService;
 import com.campus.campus_system.service.SecondHandProductService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
@@ -14,10 +21,15 @@ import java.util.Map;
 @RequestMapping("/api/product")
 @CrossOrigin(origins = "*")
 public class SecondHandProductController {
-    @Autowired
-    private SecondHandProductService productService;
+    private final SecondHandProductService productService;
+    private final UserBehaviorService userBehaviorService;
 
-    // 发布商品
+    public SecondHandProductController(SecondHandProductService productService,
+                                       UserBehaviorService userBehaviorService) {
+        this.productService = productService;
+        this.userBehaviorService = userBehaviorService;
+    }
+
     @PostMapping("/publish")
     public Map<String, Object> publishProduct(@RequestBody Map<String, Object> params) {
         Map<String, Object> result = new HashMap<>();
@@ -31,7 +43,7 @@ public class SecondHandProductController {
             if (params.containsKey("images")) {
                 product.setImages(params.get("images").toString());
             }
-            
+
             SecondHandProduct saved = productService.publishProduct(product);
             result.put("code", 0);
             result.put("data", saved);
@@ -42,16 +54,20 @@ public class SecondHandProductController {
         return result;
     }
 
-    // 获取所有在售商品
     @GetMapping("/list")
-    public Map<String, Object> getAllProducts(@RequestParam(required = false) String category) {
+    public Map<String, Object> getAllProducts(@RequestParam(required = false) String keyword,
+                                              @RequestParam(required = false) Long userId,
+                                              @RequestParam(required = false) String category,
+                                              @RequestParam(required = false) BigDecimal minPrice,
+                                              @RequestParam(required = false) BigDecimal maxPrice,
+                                              @RequestParam(required = false, defaultValue = "latest") String sort) {
         Map<String, Object> result = new HashMap<>();
         try {
-            List<SecondHandProduct> products;
-            if (category != null && !category.isEmpty()) {
-                products = productService.getProductsByCategory(category);
-            } else {
-                products = productService.getAllOnSaleProducts();
+            List<SecondHandProduct> products = productService.queryProducts(
+                    keyword, category, minPrice, maxPrice, sort
+            );
+            if (keyword != null && !keyword.isBlank()) {
+                userBehaviorService.recordSearch(userId, "product", "product", keyword);
             }
             result.put("code", 0);
             result.put("data", products);
@@ -62,12 +78,13 @@ public class SecondHandProductController {
         return result;
     }
 
-    // 搜索商品
     @GetMapping("/search")
-    public Map<String, Object> searchProducts(@RequestParam String keyword) {
+    public Map<String, Object> searchProducts(@RequestParam String keyword,
+                                              @RequestParam(required = false) Long userId) {
         Map<String, Object> result = new HashMap<>();
         try {
             List<SecondHandProduct> products = productService.searchProducts(keyword);
+            userBehaviorService.recordSearch(userId, "product", "product", keyword);
             result.put("code", 0);
             result.put("data", products);
         } catch (Exception e) {
@@ -77,12 +94,13 @@ public class SecondHandProductController {
         return result;
     }
 
-    // 获取商品详情
     @GetMapping("/{id}")
-    public Map<String, Object> getProductById(@PathVariable Long id) {
+    public Map<String, Object> getProductById(@PathVariable Long id,
+                                              @RequestParam(required = false) Long userId) {
         Map<String, Object> result = new HashMap<>();
         try {
             SecondHandProduct product = productService.getProductById(id);
+            userBehaviorService.recordView(userId, "product", "product", product.getId(), product.getTitle());
             result.put("code", 0);
             result.put("data", product);
         } catch (Exception e) {
@@ -92,7 +110,6 @@ public class SecondHandProductController {
         return result;
     }
 
-    // 获取用户发布的商品
     @GetMapping("/my/{sellerId}")
     public Map<String, Object> getMyProducts(@PathVariable Long sellerId) {
         Map<String, Object> result = new HashMap<>();
@@ -107,4 +124,3 @@ public class SecondHandProductController {
         return result;
     }
 }
-

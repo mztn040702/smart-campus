@@ -2,25 +2,38 @@
   <div class="help-container">
     <div class="header-actions">
       <el-button type="primary" @click="showPublishDialog = true">发布求助</el-button>
-      <el-input
-        v-model="searchKeyword"
-        placeholder="搜索求助..."
-        style="width: 300px; margin-left: 20px;"
-        @keyup.enter="handleSearch"
-      >
-        <template #append>
-          <el-button @click="handleSearch">搜索</el-button>
-        </template>
-      </el-input>
     </div>
 
-    <el-tabs v-model="activeCategory" @tab-change="handleCategoryChange">
-      <el-tab-pane label="全部" name=""></el-tab-pane>
-      <el-tab-pane label="学习" name="学习"></el-tab-pane>
-      <el-tab-pane label="生活" name="生活"></el-tab-pane>
-      <el-tab-pane label="技术" name="技术"></el-tab-pane>
-      <el-tab-pane label="其他" name="其他"></el-tab-pane>
-    </el-tabs>
+    <el-card class="filter-panel" shadow="never">
+      <div class="filter-grid">
+        <el-input
+          v-model="filters.keyword"
+          placeholder="搜索求助关键词"
+          clearable
+          @keyup.enter="handleSearch"
+        />
+        <el-select v-model="filters.category" placeholder="全部类型" clearable>
+          <el-option label="学习" value="学习"></el-option>
+          <el-option label="生活" value="生活"></el-option>
+          <el-option label="技术" value="技术"></el-option>
+          <el-option label="其他" value="其他"></el-option>
+        </el-select>
+        <el-select v-model="filters.urgency" placeholder="全部紧急程度" clearable>
+          <el-option label="高" value="high"></el-option>
+          <el-option label="中" value="medium"></el-option>
+          <el-option label="低" value="low"></el-option>
+        </el-select>
+        <el-select v-model="filters.sort" placeholder="排序方式">
+          <el-option label="最新发布" value="latest"></el-option>
+          <el-option label="紧急程度优先" value="urgencyDesc"></el-option>
+          <el-option label="浏览量优先" value="viewsDesc"></el-option>
+        </el-select>
+        <div class="filter-actions">
+          <el-button type="primary" @click="handleSearch">搜索</el-button>
+          <el-button @click="resetFilters">重置</el-button>
+        </div>
+      </div>
+    </el-card>
 
     <div class="helps-grid">
       <el-card
@@ -35,7 +48,7 @@
             <el-tag :type="getUrgencyType(help.urgency)" size="small">{{ getUrgencyText(help.urgency) }}</el-tag>
           </div>
           <p class="description">{{ help.description }}</p>
-          <p class="location" v-if="help.location">? {{ help.location }}</p>
+          <p class="location" v-if="help.location">地点：{{ help.location }}</p>
           <el-tag size="small">{{ help.category }}</el-tag>
           <p class="view-count">浏览 {{ help.viewCount }} 次</p>
           <el-button
@@ -50,7 +63,6 @@
       </el-card>
     </div>
 
-    <!-- 发布求助对话框 -->
     <el-dialog v-model="showPublishDialog" title="发布求助" width="600px">
       <el-form :model="publishForm" label-width="100px">
         <el-form-item label="求助标题" required>
@@ -89,7 +101,6 @@
       </template>
     </el-dialog>
 
-    <!-- 求助详情对话框 -->
     <el-dialog v-model="showDetailDialog" title="求助详情" width="700px">
       <div v-if="selectedHelp">
         <h2>{{ selectedHelp.title }}</h2>
@@ -136,12 +147,16 @@ export default {
     const router = useRouter()
     const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
     const helps = ref([])
-    const activeCategory = ref('')
-    const searchKeyword = ref('')
     const showPublishDialog = ref(false)
     const showDetailDialog = ref(false)
     const selectedHelp = ref(null)
     const publishing = ref(false)
+    const filters = ref({
+      keyword: '',
+      category: '',
+      urgency: '',
+      sort: 'latest'
+    })
 
     const publishForm = ref({
       title: '',
@@ -151,31 +166,48 @@ export default {
       urgency: 'medium'
     })
 
+    const buildHelpQueryParams = () => {
+      const params = {}
+      if (currentUser.id) {
+        params.userId = currentUser.id
+      }
+      if (filters.value.keyword) {
+        params.keyword = filters.value.keyword.trim()
+      }
+      if (filters.value.category) {
+        params.category = filters.value.category
+      }
+      if (filters.value.urgency) {
+        params.urgency = filters.value.urgency
+      }
+      if (filters.value.sort) {
+        params.sort = filters.value.sort
+      }
+      return params
+    }
+
     const loadHelps = async () => {
       try {
-        let res
-        if (searchKeyword.value) {
-          res = await axios.get('/help/search', { params: { keyword: searchKeyword.value } })
-        } else if (activeCategory.value) {
-          res = await axios.get('/help/list', { params: { category: activeCategory.value } })
-        } else {
-          res = await axios.get('/help/list')
-        }
+        const res = await axios.get('/help/list', { params: buildHelpQueryParams() })
         if (res.code === 0) {
           helps.value = res.data
         }
       } catch (error) {
-        console.error('加载求助失败:', error)
+        console.error('加载求助信息失败：', error)
       }
     }
 
-    const handleCategoryChange = () => {
-      searchKeyword.value = ''
+    const handleSearch = () => {
       loadHelps()
     }
 
-    const handleSearch = () => {
-      activeCategory.value = ''
+    const resetFilters = () => {
+      filters.value = {
+        keyword: '',
+        category: '',
+        urgency: '',
+        sort: 'latest'
+      }
       loadHelps()
     }
 
@@ -193,6 +225,7 @@ export default {
         if (res.code === 0) {
           ElMessage.success('发布成功')
           showPublishDialog.value = false
+          const preferenceKeyword = publishForm.value.category
           publishForm.value = {
             title: '',
             description: '',
@@ -201,11 +234,10 @@ export default {
             urgency: 'medium'
           }
           loadHelps()
-          // 记录偏好
           await axios.post('/recommend/preference', {
             userId: currentUser.id,
             category: 'help',
-            keyword: publishForm.value.category
+            keyword: preferenceKeyword
           })
         } else {
           ElMessage.error(res.msg || '发布失败')
@@ -219,11 +251,14 @@ export default {
 
     const viewHelpDetail = async (help) => {
       try {
-        const res = await axios.get(`/help/${help.id}`)
+        const res = await axios.get(`/help/${help.id}`, {
+          params: {
+            userId: currentUser.id
+          }
+        })
         if (res.code === 0) {
           selectedHelp.value = res.data
           showDetailDialog.value = true
-          // 记录偏好
           await axios.post('/recommend/preference', {
             userId: currentUser.id,
             category: 'help',
@@ -231,13 +266,13 @@ export default {
           })
         }
       } catch (error) {
-        ElMessage.error('加载详情失败')
+        ElMessage.error('加载求助详情失败')
       }
     }
 
     const acceptHelp = async (help) => {
       try {
-        await ElMessageBox.confirm('确定要接受这个求助吗？', '提示', {
+        await ElMessageBox.confirm('确定要接受这条求助吗？', '提示', {
           confirmButtonText: '确定',
           cancelButtonText: '取消',
           type: 'warning'
@@ -298,7 +333,7 @@ export default {
     }
 
     const getUrgencyText = (urgency) => {
-      const map = { high: '紧急', medium: '一般', low: '不急' }
+      const map = { high: '高', medium: '中', low: '低' }
       return map[urgency] || urgency
     }
 
@@ -319,15 +354,15 @@ export default {
     return {
       currentUser,
       helps,
-      activeCategory,
-      searchKeyword,
+      filters,
       showPublishDialog,
       showDetailDialog,
       selectedHelp,
       publishing,
       publishForm,
-      handleCategoryChange,
+      buildHelpQueryParams,
       handleSearch,
+      resetFilters,
       handlePublish,
       viewHelpDetail,
       acceptHelp,
@@ -351,6 +386,23 @@ export default {
   display: flex;
   align-items: center;
   margin-bottom: 20px;
+  justify-content: space-between;
+}
+
+.filter-panel {
+  margin-bottom: 20px;
+}
+
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
 }
 
 .helps-grid {
@@ -402,4 +454,3 @@ export default {
   margin-top: 10px;
 }
 </style>
-
