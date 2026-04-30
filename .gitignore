@@ -23,6 +23,8 @@ target/
 /nbproject/private/
 /nbbuild/
 /dist/
+dist/
+frontend/dist/
 /nbdist/
 /.nb-gradle/
 build/
@@ -41,6 +43,7 @@ __pycache__/
 
 # AI model files
 ai-recommend-service/models/
+models/
 
 # Node dependencies
 node_modules/

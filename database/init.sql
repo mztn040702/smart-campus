@@ -107,6 +107,23 @@ CREATE TABLE IF NOT EXISTS user_preference (
     INDEX idx_category (category)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户偏好表';
 
+-- 用户行为表（用于动态推荐画像）
+CREATE TABLE IF NOT EXISTS user_behavior (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL COMMENT '用户ID',
+    category VARCHAR(50) COMMENT '业务分类：product, job, help',
+    behavior_type VARCHAR(30) COMMENT '行为类型：SEARCH, VIEW, CLICK, PUBLISH',
+    target_type VARCHAR(30) COMMENT '目标类型',
+    target_id VARCHAR(100) COMMENT '目标ID',
+    keyword VARCHAR(200) COMMENT '搜索关键词',
+    content_title VARCHAR(255) COMMENT '内容标题',
+    behavior_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '行为时间',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    INDEX idx_user_behavior_user (user_id),
+    INDEX idx_user_behavior_category (category),
+    INDEX idx_user_behavior_type (behavior_type)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户行为表';
+
 -- 插入测试数据
 -- 测试用户
 INSERT INTO user (username, password, real_name, nickname, email, phone, bio, college, role, status) VALUES
