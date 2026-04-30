@@ -52,15 +52,15 @@ public class HelpRequestController {
     }
 
     @GetMapping("/list")
-    public Map<String, Object> getAllRequests(@RequestParam(required = false) String category) {
+    public Map<String, Object> getAllRequests(@RequestParam(required = false) String keyword,
+                                              @RequestParam(required = false) String category,
+                                              @RequestParam(required = false) String urgency,
+                                              @RequestParam(required = false, defaultValue = "latest") String sort) {
         Map<String, Object> result = new HashMap<>();
         try {
-            List<HelpRequest> requests;
-            if (category != null && !category.isEmpty()) {
-                requests = helpRequestService.getRequestsByCategory(category);
-            } else {
-                requests = helpRequestService.getAllPendingRequests();
-            }
+            List<HelpRequest> requests = helpRequestService.queryRequests(
+                    keyword, category, urgency, sort
+            );
             result.put("code", 0);
             result.put("data", requests);
         } catch (Exception e) {

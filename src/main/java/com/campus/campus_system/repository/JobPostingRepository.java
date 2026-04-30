@@ -2,12 +2,13 @@ package com.campus.campus_system.repository;
 
 import com.campus.campus_system.entity.JobPosting;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
-public interface JobPostingRepository extends JpaRepository<JobPosting, Long> {
+public interface JobPostingRepository extends JpaRepository<JobPosting, Long>, JpaSpecificationExecutor<JobPosting> {
     List<JobPosting> findByStatus(String status);
 
     List<JobPosting> findByJobTypeAndStatus(String jobType, String status);

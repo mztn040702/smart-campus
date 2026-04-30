@@ -51,15 +51,16 @@ public class SecondHandProductController {
     }
 
     @GetMapping("/list")
-    public Map<String, Object> getAllProducts(@RequestParam(required = false) String category) {
+    public Map<String, Object> getAllProducts(@RequestParam(required = false) String keyword,
+                                              @RequestParam(required = false) String category,
+                                              @RequestParam(required = false) BigDecimal minPrice,
+                                              @RequestParam(required = false) BigDecimal maxPrice,
+                                              @RequestParam(required = false, defaultValue = "latest") String sort) {
         Map<String, Object> result = new HashMap<>();
         try {
-            List<SecondHandProduct> products;
-            if (category != null && !category.isEmpty()) {
-                products = productService.getProductsByCategory(category);
-            } else {
-                products = productService.getAllOnSaleProducts();
-            }
+            List<SecondHandProduct> products = productService.queryProducts(
+                    keyword, category, minPrice, maxPrice, sort
+            );
             result.put("code", 0);
             result.put("data", products);
         } catch (Exception e) {

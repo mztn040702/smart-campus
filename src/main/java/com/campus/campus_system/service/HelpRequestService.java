@@ -3,9 +3,13 @@ package com.campus.campus_system.service;
 import com.campus.campus_system.entity.HelpRequest;
 import com.campus.campus_system.repository.HelpRequestRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -13,67 +17,120 @@ public class HelpRequestService {
     @Autowired
     private HelpRequestRepository helpRequestRepository;
 
-    // ·¢²¼ÇóÖú
+    // å‘å¸ƒæ±‚åŠ©
     @Transactional
     public HelpRequest publishHelpRequest(HelpRequest helpRequest) {
         return helpRequestRepository.save(helpRequest);
     }
 
-    // »ñÈ¡ËùÓĞ´ı°ïÖúµÄÇëÇó
+    // è·å–æ‰€æœ‰å¾…å¸®åŠ©çš„è¯·æ±‚
     public List<HelpRequest> getAllPendingRequests() {
         return helpRequestRepository.findByStatus("pending");
     }
 
-    // ¸ù¾İ·ÖÀà»ñÈ¡ÇóÖú
+    // æ ¹æ®åˆ†ç±»è·å–æ±‚åŠ©
     public List<HelpRequest> getRequestsByCategory(String category) {
         return helpRequestRepository.findByCategoryAndStatus(category, "pending");
     }
 
-    // ËÑË÷ÇóÖú
-    public List<HelpRequest> searchRequests(String keyword) {
-        return helpRequestRepository.search(keyword);
+    public List<HelpRequest> queryRequests(String keyword, String category, String urgency, String sort) {
+        Specification<HelpRequest> specification = (root, query, criteriaBuilder) -> {
+            List<jakarta.persistence.criteria.Predicate> predicates = new ArrayList<>();
+            predicates.add(criteriaBuilder.equal(root.get("status"), "pending"));
+
+            if (keyword != null && !keyword.isBlank()) {
+                String pattern = "%" + keyword.trim() + "%";
+                predicates.add(criteriaBuilder.or(
+                        criteriaBuilder.like(root.get("title"), pattern),
+                        criteriaBuilder.like(root.get("description"), pattern)
+                ));
+            }
+
+            if (category != null && !category.isBlank()) {
+                predicates.add(criteriaBuilder.equal(root.get("category"), category.trim()));
+            }
+
+            if (urgency != null && !urgency.isBlank()) {
+                predicates.add(criteriaBuilder.equal(root.get("urgency"), urgency.trim()));
+            }
+
+            return criteriaBuilder.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
+        };
+
+        List<HelpRequest> results = helpRequestRepository.findAll(specification, resolveHelpSort(sort));
+        if ("urgencyDesc".equals(sort)) {
+            results.sort(Comparator
+                    .comparingInt((HelpRequest request) -> urgencyRank(request.getUrgency())).reversed()
+                    .thenComparing(HelpRequest::getId, Comparator.reverseOrder()));
+        }
+        return results;
     }
 
-    // »ñÈ¡ÇóÖúÏêÇé
+    // æœç´¢æ±‚åŠ©
+    public List<HelpRequest> searchRequests(String keyword) {
+        return queryRequests(keyword, null, null, "latest");
+    }
+
+    // è·å–æ±‚åŠ©è¯¦æƒ…
     public HelpRequest getRequestById(Long id) {
         HelpRequest request = helpRequestRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("ÇóÖú²»´æÔÚ"));
-        // Ôö¼Óä¯ÀÀ´ÎÊı
+                .orElseThrow(() -> new RuntimeException("æ±‚åŠ©ä¸å­˜åœ¨"));
+        // å¢åŠ æµè§ˆæ¬¡æ•°
         request.setViewCount(request.getViewCount() + 1);
         helpRequestRepository.save(request);
         return request;
     }
 
-    // ½ÓÊÜ°ïÖú£¨¸üĞÂ°ïÖúÕßIDºÍ×´Ì¬£©
+    // æ¥å—å¸®åŠ©ï¼ˆæ›´æ–°å¸®åŠ©è€…IDå’ŒçŠ¶æ€ï¼‰
     @Transactional
     public HelpRequest acceptHelp(Long requestId, Long helperId) {
         HelpRequest request = helpRequestRepository.findById(requestId)
-                .orElseThrow(() -> new RuntimeException("ÇóÖú²»´æÔÚ"));
+                .orElseThrow(() -> new RuntimeException("æ±‚åŠ©ä¸å­˜åœ¨"));
         if (!"pending".equals(request.getStatus())) {
-            throw new RuntimeException("¸ÃÇóÖúÒÑ±»½ÓÊÜ");
+            throw new RuntimeException("è¯¥æ±‚åŠ©å·²è¢«æ¥å—");
         }
         request.setHelperId(helperId);
         request.setStatus("helping");
         return helpRequestRepository.save(request);
     }
 
-    // Íê³É°ïÖú
+    // å®Œæˆå¸®åŠ©
     @Transactional
     public HelpRequest completeHelp(Long requestId) {
         HelpRequest request = helpRequestRepository.findById(requestId)
-                .orElseThrow(() -> new RuntimeException("ÇóÖú²»´æÔÚ"));
+                .orElseThrow(() -> new RuntimeException("æ±‚åŠ©ä¸å­˜åœ¨"));
         request.setStatus("completed");
         return helpRequestRepository.save(request);
     }
 
-    // »ñÈ¡ÓÃ»§·¢²¼µÄÇóÖú
+    // è·å–ç”¨æˆ·å‘å¸ƒçš„æ±‚åŠ©
     public List<HelpRequest> getRequestsByRequester(Long requesterId) {
         return helpRequestRepository.findByRequesterId(requesterId);
     }
 
-    // »ñÈ¡ÓÃ»§°ïÖúµÄÇóÖú
+    // è·å–ç”¨æˆ·å¸®åŠ©çš„æ±‚åŠ©
     public List<HelpRequest> getRequestsByHelper(Long helperId) {
         return helpRequestRepository.findByHelperId(helperId);
+    }
+
+    private Sort resolveHelpSort(String sort) {
+        if ("viewsDesc".equals(sort)) {
+            return Sort.by(Sort.Direction.DESC, "viewCount").and(Sort.by(Sort.Direction.DESC, "id"));
+        }
+        return Sort.by(Sort.Direction.DESC, "id");
+    }
+
+    private int urgencyRank(String urgency) {
+        if ("high".equals(urgency)) {
+            return 3;
+        }
+        if ("medium".equals(urgency)) {
+            return 2;
+        }
+        if ("low".equals(urgency)) {
+            return 1;
+        }
+        return 0;
     }
 }
 

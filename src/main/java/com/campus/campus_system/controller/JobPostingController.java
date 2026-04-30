@@ -58,15 +58,17 @@ public class JobPostingController {
     }
 
     @GetMapping("/list")
-    public Map<String, Object> getAllJobs(@RequestParam(required = false) String jobType) {
+    public Map<String, Object> getAllJobs(@RequestParam(required = false) String keyword,
+                                          @RequestParam(required = false) String location,
+                                          @RequestParam(required = false) String jobType,
+                                          @RequestParam(required = false) BigDecimal minSalary,
+                                          @RequestParam(required = false) BigDecimal maxSalary,
+                                          @RequestParam(required = false, defaultValue = "latest") String sort) {
         Map<String, Object> result = new HashMap<>();
         try {
-            List<JobPosting> jobs;
-            if (jobType != null && !jobType.isEmpty()) {
-                jobs = jobPostingService.getJobsByType(jobType);
-            } else {
-                jobs = jobPostingService.getAllActiveJobs();
-            }
+            List<JobPosting> jobs = jobPostingService.queryJobs(
+                    keyword, location, jobType, minSalary, maxSalary, sort
+            );
             result.put("code", 0);
             result.put("data", jobs);
         } catch (Exception e) {
